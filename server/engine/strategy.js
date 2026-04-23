@@ -216,6 +216,7 @@ async function analyzeStock(symbol) {
   const analysis = generateSignals(data, fundamentals);
   return {
     symbol,
+    name: fundamentals.name || symbol,
     ...analysis,
     dataPoints: data.length,
     latestDate: data[0]?.date,
@@ -237,6 +238,7 @@ async function screenStocks(symbols) {
 
       results.push({
         symbol,
+        name: fundamentals.name || symbol,
         signal: analysis.signal,
         confidence: analysis.confidence,
         reason: analysis.reason,

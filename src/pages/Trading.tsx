@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -107,6 +107,28 @@ export default function Trading() {
       setAutoTrading(false);
     }
   };
+
+  // Auto-fetch and Analyze on symbol change (debounced)
+  const debounceTimer = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    if (!symbol || symbol.length < 3) {
+      setStockData([]);
+      setAnalysis(null);
+      return;
+    }
+
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+
+    debounceTimer.current = setTimeout(() => {
+      fetchStockData();
+      analyzeStock();
+    }, 600);
+
+    return () => {
+      if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    };
+  }, [symbol, fetchStockData, analyzeStock]);
 
   // Chart Data
   const chartData = stockData.length > 0 ? {
@@ -227,11 +249,20 @@ export default function Trading() {
           {analysis && (
             <div className="card" style={{ marginBottom: 24 }}>
               <div className="card-header">
-                <div className="card-title">{analysis.symbol} 分析結果</div>
-                <span className={`badge ${analysis.signal === 'BUY' ? 'badge-buy' : analysis.signal === 'SELL' ? 'badge-sell' : 'badge-hold'}`}>
-                  <span className={`signal-dot ${analysis.signal.toLowerCase()}`} />
-                  {analysis.signal === 'BUY' ? '買いシグナル' : analysis.signal === 'SELL' ? '売りシグナル' : '様子見'}
-                </span>
+              <div className="card-title">
+                {analysis.name ? (
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <span style={{ fontSize: 18 }}>{analysis.name}</span>
+                    <span className="mono" style={{ fontSize: 12, color: 'var(--text-muted)' }}>{analysis.symbol}</span>
+                  </div>
+                ) : (
+                  `${analysis.symbol} 分析結果`
+                )}
+              </div>
+              <span className={`badge ${analysis.signal === 'BUY' ? 'badge-buy' : analysis.signal === 'SELL' ? 'badge-sell' : 'badge-hold'}`}>
+                <span className={`signal-dot ${analysis.signal.toLowerCase()}`} />
+                {analysis.signal === 'BUY' ? '買いシグナル' : analysis.signal === 'SELL' ? '売りシグナル' : '様子見'}
+              </span>
               </div>
 
               <div style={{ marginBottom: 12 }}>
@@ -344,7 +375,9 @@ export default function Trading() {
         <div>
           <div className="card">
             <div className="card-header">
-              <div className="card-title">{symbol.toUpperCase()} 株価チャート</div>
+              <div className="card-title">
+                {analysis?.name || symbol.toUpperCase()} チャート
+              </div>
               {stockData.length > 0 && (
                 <span className="text-muted" style={{ fontSize: 12 }}>
                   {stockData.length}日分のデータ

@@ -65,6 +65,7 @@ export interface StockData {
 
 export interface LatestPrice {
   symbol: string;
+  name?: string;
   price: number;
   date: string;
   open: number;
@@ -161,6 +162,7 @@ export interface TradeStats {
 
 export interface Analysis {
   symbol: string;
+  name?: string;
   signal: 'BUY' | 'SELL' | 'HOLD';
   reason: string;
   confidence: number;
@@ -184,6 +186,7 @@ export interface AutoTradeResult {
 
 export interface Fundamentals {
   symbol: string;
+  name?: string;
   per: number | null;
   pbr: number | null;
   dividendYield: number | null;
@@ -193,6 +196,7 @@ export interface Fundamentals {
 
 export interface ScreenResult {
   symbol: string;
+  name?: string;
   signal: 'BUY' | 'SELL' | 'HOLD';
   confidence: number;
   reason: string;

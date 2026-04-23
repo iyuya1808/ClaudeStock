@@ -106,6 +106,7 @@ async function getLatestPrice(symbol) {
     const quote = await yahooFinance.quote(symbol);
     return {
       symbol,
+      name: quote.longName || quote.shortName || symbol,
       price: quote.regularMarketPrice,
       date: new Date(quote.regularMarketTime).toISOString().split('T')[0],
       open: quote.regularMarketOpen,
@@ -158,15 +159,17 @@ async function getStockFundamentals(symbol) {
     requestCount++;
 
     const summary = await yahooFinance.quoteSummary(symbol, {
-      modules: ['defaultKeyStatistics', 'summaryDetail', 'financialData'],
+      modules: ['defaultKeyStatistics', 'summaryDetail', 'financialData', 'price'],
     });
 
     const keyStats = summary.defaultKeyStatistics || {};
     const summaryDetail = summary.summaryDetail || {};
     const financialData = summary.financialData || {};
+    const price = summary.price || {};
 
     return {
       symbol,
+      name: price.longName || price.shortName || symbol,
       per: summaryDetail.trailingPE ?? keyStats.trailingPE ?? null,
       pbr: keyStats.priceToBook ?? null,
       dividendYield: summaryDetail.dividendYield ?? null,
@@ -175,7 +178,7 @@ async function getStockFundamentals(symbol) {
     };
   } catch (error) {
     console.error(`Fundamentals fetch error for ${symbol}:`, error.message);
-    return { symbol, per: null, pbr: null, dividendYield: null, roe: null, revenueGrowth: null };
+    return { symbol, name: symbol, per: null, pbr: null, dividendYield: null, roe: null, revenueGrowth: null };
   }
 }
 

@@ -122,7 +122,7 @@ export default function Screening() {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border-primary)', color: 'var(--text-muted)', fontSize: 11 }}>
-                  <th style={{ textAlign: 'left', padding: '8px 12px' }}>銘柄</th>
+                  <th style={{ textAlign: 'left', padding: '8px 12px', minWidth: 120 }}>銘柄 / 会社名</th>
                   <th style={{ textAlign: 'center', padding: '8px 12px' }}>バリュースコア</th>
                   <th style={{ textAlign: 'right', padding: '8px 12px' }}>PER</th>
                   <th style={{ textAlign: 'right', padding: '8px 12px' }}>PBR</th>
@@ -152,8 +152,11 @@ export default function Screening() {
 
                   return (
                     <tr key={r.symbol} style={{ borderBottom: '1px solid var(--border-primary)' }}>
-                      <td style={{ padding: '10px 12px', fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700 }}>
-                        {r.symbol}
+                      <td style={{ padding: '10px 12px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <span style={{ fontWeight: 700, fontSize: 14 }}>{r.name || '-'}</span>
+                          <span className="mono" style={{ fontSize: 10, color: 'var(--text-muted)' }}>{r.symbol}</span>
+                        </div>
                       </td>
                       <td style={{ padding: '10px 12px', textAlign: 'center' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
