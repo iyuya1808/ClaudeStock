@@ -147,4 +147,36 @@ async function searchSymbol(keywords) {
   }
 }
 
-export { fetchDailyData, getLatestPrice, searchSymbol };
+// ファンダメンタルズデータ取得（PER/PBR/ROE/配当利回り/売上成長率）
+async function getStockFundamentals(symbol) {
+  if (/^\d{4}$/.test(symbol)) {
+    symbol = `${symbol}.T`;
+  }
+
+  try {
+    checkRateLimit();
+    requestCount++;
+
+    const summary = await yahooFinance.quoteSummary(symbol, {
+      modules: ['defaultKeyStatistics', 'summaryDetail', 'financialData'],
+    });
+
+    const keyStats = summary.defaultKeyStatistics || {};
+    const summaryDetail = summary.summaryDetail || {};
+    const financialData = summary.financialData || {};
+
+    return {
+      symbol,
+      per: summaryDetail.trailingPE ?? keyStats.trailingPE ?? null,
+      pbr: keyStats.priceToBook ?? null,
+      dividendYield: summaryDetail.dividendYield ?? null,
+      roe: financialData.returnOnEquity ?? null,
+      revenueGrowth: financialData.revenueGrowth ?? null,
+    };
+  } catch (error) {
+    console.error(`Fundamentals fetch error for ${symbol}:`, error.message);
+    return { symbol, per: null, pbr: null, dividendYield: null, roe: null, revenueGrowth: null };
+  }
+}
+
+export { fetchDailyData, getLatestPrice, searchSymbol, getStockFundamentals };

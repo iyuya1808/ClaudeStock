@@ -4,13 +4,15 @@ import Trading from './pages/Trading';
 import Portfolio from './pages/Portfolio';
 import History from './pages/History';
 import Settings from './pages/Settings';
+import Screening from './pages/Screening';
 import './index.css';
 
-type Page = 'dashboard' | 'trading' | 'portfolio' | 'history' | 'settings';
+type Page = 'dashboard' | 'trading' | 'portfolio' | 'history' | 'settings' | 'screening';
 
 const NAV_ITEMS: { id: Page; icon: string; label: string }[] = [
   { id: 'dashboard', icon: '▦', label: 'ダッシュボード' },
   { id: 'trading', icon: '◈', label: '取引' },
+  { id: 'screening', icon: '◧', label: 'スクリーニング' },
   { id: 'portfolio', icon: '◉', label: 'ポートフォリオ' },
   { id: 'history', icon: '≡', label: '取引履歴' },
   { id: 'settings', icon: '◎', label: '設定' },
@@ -24,6 +26,7 @@ function App() {
       case 'dashboard': return <Dashboard />;
       case 'trading': return <Trading />;
       case 'portfolio': return <Portfolio />;
+      case 'screening': return <Screening />;
       case 'history': return <History />;
       case 'settings': return <Settings />;
       default: return <Dashboard />;

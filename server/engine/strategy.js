@@ -1,5 +1,5 @@
 import db from '../db.js';
-import { fetchDailyData, getLatestPrice } from '../api/stocks.js';
+import { fetchDailyData, getLatestPrice, getStockFundamentals } from '../api/stocks.js';
 import { buyStock, sellStock, getAccount, getPortfolio } from '../api/trading.js';
 
 // テクニカル指標計算
@@ -28,8 +28,57 @@ function calculateRSI(prices, period = 14) {
   return 100 - (100 / (1 + rs));
 }
 
+// ===== バリュースコア計算 (stock_skills の indicators.py を移植) =====
+
+function _scorePER(per, perMax = 15.0) {
+  if (per === null || per <= 0) return 0;
+  if (per >= perMax * 2) return 0;
+  return Math.max(0, 25 * (1 - per / (perMax * 2)));
+}
+
+function _scorePBR(pbr, pbrMax = 1.0) {
+  if (pbr === null || pbr <= 0) return 0;
+  if (pbr >= pbrMax * 2) return 0;
+  return Math.max(0, 25 * (1 - pbr / (pbrMax * 2)));
+}
+
+function _scoreDividend(dividendYield, divMin = 0.03) {
+  if (dividendYield === null || dividendYield <= 0) return 0;
+  const cap = divMin * 3;
+  const ratio = Math.min(dividendYield / cap, 1.0);
+  return 20 * ratio;
+}
+
+function _scoreROE(roe, roeMin = 0.08) {
+  if (roe === null || roe <= 0) return 0;
+  const cap = roeMin * 3;
+  const ratio = Math.min(roe / cap, 1.0);
+  return 15 * ratio;
+}
+
+function _scoreGrowth(revenueGrowth) {
+  if (revenueGrowth === null || revenueGrowth <= 0) return 0;
+  const cap = 0.30;
+  const ratio = Math.min(revenueGrowth / cap, 1.0);
+  return 15 * ratio;
+}
+
+// 割安度スコア (0-100点)
+// PER: 25pt / PBR: 25pt / 配当利回り: 20pt / ROE: 15pt / 売上成長率: 15pt
+function calculateValueScore(fundamentals) {
+  if (!fundamentals) return null;
+  const { per, pbr, dividendYield, roe, revenueGrowth } = fundamentals;
+  const total =
+    _scorePER(per) +
+    _scorePBR(pbr) +
+    _scoreDividend(dividendYield) +
+    _scoreROE(roe) +
+    _scoreGrowth(revenueGrowth);
+  return Math.round(Math.min(total, 100) * 100) / 100;
+}
+
 // 売買シグナル生成
-function generateSignals(data) {
+function generateSignals(data, fundamentals = null) {
   if (data.length < 50) return { signal: 'HOLD', reason: 'データ不足（50日分必要）', indicators: {} };
 
   const closes = data.map(d => d.close);
@@ -39,12 +88,16 @@ function generateSignals(data) {
   const currentPrice = closes[0];
   const prevPrice = closes[1];
 
+  const valueScore = calculateValueScore(fundamentals);
+
   const indicators = {
     currentPrice,
     sma20: sma20 ? parseFloat(sma20.toFixed(2)) : null,
     sma50: sma50 ? parseFloat(sma50.toFixed(2)) : null,
     rsi: rsi ? parseFloat(rsi.toFixed(2)) : null,
     priceChange: parseFloat(((currentPrice - prevPrice) / prevPrice * 100).toFixed(2)),
+    valueScore: valueScore !== null ? parseFloat(valueScore.toFixed(1)) : null,
+    fundamentals: fundamentals || null,
   };
 
   // シグナルロジック
@@ -82,6 +135,18 @@ function generateSignals(data) {
     }
   }
 
+  // バリュースコアによる信頼度調整
+  if (valueScore !== null) {
+    if (signal === 'BUY') {
+      if (valueScore >= 60) {
+        confidence += 20;
+        reason += ` + 割安度高 (${valueScore.toFixed(0)}pt)`;
+      } else if (valueScore < 30) {
+        confidence -= 15;
+      }
+    }
+  }
+
   if (!reason) {
     reason = '現在明確なシグナルなし。市場を観察中。';
   }
@@ -89,7 +154,7 @@ function generateSignals(data) {
   return {
     signal,
     reason,
-    confidence: Math.min(confidence, 100),
+    confidence: Math.min(Math.max(confidence, 0), 100),
     indicators,
   };
 }
@@ -102,46 +167,40 @@ async function executeAutoTrade(symbols = ['7203.T', '6758.T', '9984.T', '7974.T
 
   for (const symbol of symbols) {
     try {
-      const data = await fetchDailyData(symbol);
-      const analysis = generateSignals(data);
+      const [data, fundamentals] = await Promise.all([
+        fetchDailyData(symbol),
+        getStockFundamentals(symbol),
+      ]);
+      const analysis = generateSignals(data, fundamentals);
 
       let action = null;
 
       if (analysis.signal === 'BUY' && analysis.confidence >= 30) {
-        // ポジションサイズ: 残高の10%まで
         const maxInvestment = account.current_cash * 0.1;
         const currentPrice = analysis.indicators.currentPrice;
         const shares = Math.floor(maxInvestment / currentPrice);
 
         if (shares > 0 && maxInvestment >= currentPrice) {
           try {
-            action = await buyStock(symbol, shares, 'AUTO_SMA_RSI', analysis.reason);
+            action = await buyStock(symbol, shares, 'AUTO_SMA_RSI_VALUE', analysis.reason);
           } catch (e) {
             action = { error: e.message };
           }
         }
       } else if (analysis.signal === 'SELL' && analysis.confidence >= 30) {
-        // 保有していれば全株売却
         const position = portfolio.find(p => p.symbol === symbol);
         if (position) {
           try {
-            action = await sellStock(symbol, position.shares, 'AUTO_SMA_RSI', analysis.reason);
+            action = await sellStock(symbol, position.shares, 'AUTO_SMA_RSI_VALUE', analysis.reason);
           } catch (e) {
             action = { error: e.message };
           }
         }
       }
 
-      results.push({
-        symbol,
-        analysis,
-        action,
-      });
+      results.push({ symbol, analysis, action });
     } catch (error) {
-      results.push({
-        symbol,
-        error: error.message,
-      });
+      results.push({ symbol, error: error.message });
     }
   }
 
@@ -150,8 +209,11 @@ async function executeAutoTrade(symbols = ['7203.T', '6758.T', '9984.T', '7974.T
 
 // 特定銘柄の分析のみ（売買なし）
 async function analyzeStock(symbol) {
-  const data = await fetchDailyData(symbol);
-  const analysis = generateSignals(data);
+  const [data, fundamentals] = await Promise.all([
+    fetchDailyData(symbol),
+    getStockFundamentals(symbol),
+  ]);
+  const analysis = generateSignals(data, fundamentals);
   return {
     symbol,
     ...analysis,
@@ -160,4 +222,36 @@ async function analyzeStock(symbol) {
   };
 }
 
-export { generateSignals, executeAutoTrade, analyzeStock };
+// 複数銘柄をバリュースコアでスクリーニング
+async function screenStocks(symbols) {
+  const results = [];
+
+  for (const symbol of symbols) {
+    try {
+      const [data, fundamentals] = await Promise.all([
+        fetchDailyData(symbol),
+        getStockFundamentals(symbol),
+      ]);
+      const analysis = generateSignals(data, fundamentals);
+      const valueScore = calculateValueScore(fundamentals);
+
+      results.push({
+        symbol,
+        signal: analysis.signal,
+        confidence: analysis.confidence,
+        reason: analysis.reason,
+        valueScore,
+        fundamentals,
+        indicators: analysis.indicators,
+      });
+    } catch (error) {
+      results.push({ symbol, error: error.message, valueScore: null });
+    }
+  }
+
+  // バリュースコア降順でソート
+  results.sort((a, b) => (b.valueScore ?? -1) - (a.valueScore ?? -1));
+  return results;
+}
+
+export { generateSignals, executeAutoTrade, analyzeStock, screenStocks, calculateValueScore };

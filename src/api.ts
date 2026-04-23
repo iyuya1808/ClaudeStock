@@ -46,6 +46,10 @@ export const analysisApi = {
       method: 'POST',
       body: JSON.stringify({ symbols }),
     }),
+  screen: (symbols?: string[]) => {
+    const q = symbols ? `?symbols=${symbols.join(',')}` : '';
+    return apiCall<ScreenResult[]>(`/screen${q}`);
+  },
 };
 
 // 型定義
@@ -175,5 +179,25 @@ export interface AutoTradeResult {
   symbol: string;
   analysis?: Analysis;
   action?: TradeResult | { error: string };
+  error?: string;
+}
+
+export interface Fundamentals {
+  symbol: string;
+  per: number | null;
+  pbr: number | null;
+  dividendYield: number | null;
+  roe: number | null;
+  revenueGrowth: number | null;
+}
+
+export interface ScreenResult {
+  symbol: string;
+  signal: 'BUY' | 'SELL' | 'HOLD';
+  confidence: number;
+  reason: string;
+  valueScore: number | null;
+  fundamentals: Fundamentals | null;
+  indicators: Analysis['indicators'] & { valueScore: number | null };
   error?: string;
 }

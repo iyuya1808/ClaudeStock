@@ -9,7 +9,7 @@ dotenv.config();
 import db from './db.js';
 import { fetchDailyData, getLatestPrice, searchSymbol } from './api/stocks.js';
 import { getAccount, getPortfolio, getTransactions, buyStock, sellStock, getPortfolioSummary, getTradeStats } from './api/trading.js';
-import { executeAutoTrade, analyzeStock } from './engine/strategy.js';
+import { executeAutoTrade, analyzeStock, screenStocks } from './engine/strategy.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -149,6 +149,21 @@ app.post('/api/auto-trade', async (req, res) => {
   try {
     const symbols = req.body?.symbols || ['7203.T', '6758.T', '9984.T', '7974.T', '6861.T'];
     const results = await executeAutoTrade(symbols);
+    res.json({ success: true, data: results });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+});
+
+// 割安株スクリーニング
+app.get('/api/screen', async (req, res) => {
+  try {
+    const defaultSymbols = '7203.T,6758.T,9984.T,7974.T,6861.T,4063.T,8306.T,9432.T,6902.T,7741.T';
+    const symbols = (req.query.symbols || defaultSymbols)
+      .split(',')
+      .map(s => s.trim().toUpperCase())
+      .filter(Boolean);
+    const results = await screenStocks(symbols);
     res.json({ success: true, data: results });
   } catch (error) {
     res.status(400).json({ success: false, error: error.message });
