@@ -147,7 +147,9 @@ app.get('/api/analyze/:symbol', async (req, res) => {
 // 自動売買実行
 app.post('/api/auto-trade', async (req, res) => {
   try {
-    const symbols = req.body?.symbols || ['7203.T', '6758.T', '9984.T', '7974.T', '6861.T'];
+    // 空配列 or 未指定の場合はデフォルトユニバース（15銘柄）を使用
+    const reqSymbols = req.body?.symbols;
+    const symbols = Array.isArray(reqSymbols) && reqSymbols.length > 0 ? reqSymbols : undefined;
     const results = await executeAutoTrade(symbols);
     res.json({ success: true, data: results });
   } catch (error) {

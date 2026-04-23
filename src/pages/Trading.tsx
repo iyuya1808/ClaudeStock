@@ -11,7 +11,7 @@ import {
   Filler,
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
-import { tradingApi, analysisApi, stocksApi, type StockData, type Analysis } from '../api';
+import { tradingApi, analysisApi, stocksApi, type StockData, type Analysis, type AutoTradeResult } from '../api';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
 
@@ -36,11 +36,11 @@ export default function Trading() {
   const [trading, setTrading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [autoTrading, setAutoTrading] = useState(false);
-  const [autoResults, setAutoResults] = useState<any[]>([]);
+  const [autoResults, setAutoResults] = useState<AutoTradeResult[]>([]);
 
   const showMessage = (type: 'success' | 'error', text: string) => {
     setMessage({ type, text });
-    setTimeout(() => setMessage(null), 4000);
+    setTimeout(() => setMessage(null), 5000);
   };
 
   const fetchStockData = useCallback(async () => {
@@ -98,9 +98,12 @@ export default function Trading() {
   const handleAutoTrade = async () => {
     try {
       setAutoTrading(true);
-      const results = await analysisApi.autoTrade(POPULAR_SYMBOLS.map(s => s.symbol));
+      setAutoResults([]);
+      // 銘柄リストはサーバーのデフォルトユニバース（15銘柄）を使用
+      const results = await analysisApi.autoTrade([]);
       setAutoResults(results);
-      showMessage('success', `自動売買分析完了: ${results.length}銘柄を分析しました`);
+      const traded = results.filter(r => r.action && !('error' in r.action)).length;
+      showMessage('success', `自動売買完了: ${results.length}銘柄を分析 / ${traded}件取引実行`);
     } catch (e) {
       showMessage('error', (e as Error).message);
     } finally {
@@ -108,8 +111,7 @@ export default function Trading() {
     }
   };
 
-  // Auto-fetch and Analyze on symbol change (debounced)
-  const debounceTimer = useRef<NodeJS.Timeout | null>(null);
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!symbol || symbol.length < 3) {
@@ -117,20 +119,16 @@ export default function Trading() {
       setAnalysis(null);
       return;
     }
-
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
-
     debounceTimer.current = setTimeout(() => {
       fetchStockData();
       analyzeStock();
     }, 600);
-
     return () => {
       if (debounceTimer.current) clearTimeout(debounceTimer.current);
     };
   }, [symbol, fetchStockData, analyzeStock]);
 
-  // Chart Data
   const chartData = stockData.length > 0 ? {
     labels: [...stockData].reverse().map(d => d.date.slice(5)),
     datasets: [{
@@ -172,11 +170,13 @@ export default function Trading() {
         ticks: { color: '#48453e', font: { family: "'IBM Plex Mono', monospace", size: 11 } },
       },
     },
-    interaction: {
-      intersect: false,
-      mode: 'index' as const,
-    },
+    interaction: { intersect: false, mode: 'index' as const },
   };
+
+  // autoResults stats
+  const tradedCount = autoResults.filter(r => r.action && !('error' in r.action)).length;
+  const skippedCount = autoResults.filter(r => r.skipped).length;
+  const errorCount = autoResults.filter(r => r.error || (r.action && 'error' in r.action)).length;
 
   return (
     <div className="fade-in">
@@ -185,12 +185,154 @@ export default function Trading() {
         <p className="page-subtitle">Trade Execution / Analysis</p>
       </div>
 
+      {/* ===== HERO: 自動売買 ===== */}
+      <div className="card" style={{
+        marginBottom: 28,
+        border: '1px solid rgba(232, 149, 10, 0.3)',
+        background: 'linear-gradient(135deg, var(--bg-card) 0%, rgba(232,149,10,0.04) 100%)',
+      }}>
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16, marginBottom: autoResults.length > 0 ? 20 : 0 }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+              <span style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-primary)', fontFamily: "'Syne', sans-serif" }}>
+                自動売買
+              </span>
+              <span style={{
+                fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 4,
+                background: 'rgba(232,149,10,0.15)', color: 'var(--yellow)', letterSpacing: '0.05em',
+              }}>AUTO</span>
+            </div>
+            <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: 0 }}>
+              15銘柄をスクリーニング → SMA × RSI × バリュースコアで最適銘柄を自動選別・売買
+            </p>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            {autoResults.length > 0 && (
+              <div style={{ display: 'flex', gap: 16, fontSize: 12 }}>
+                <span style={{ color: 'var(--text-muted)' }}>
+                  分析 <strong style={{ color: 'var(--text-primary)' }}>{autoResults.length}</strong>
+                </span>
+                <span style={{ color: 'var(--text-muted)' }}>
+                  取引 <strong style={{ color: tradedCount > 0 ? 'var(--green)' : 'var(--text-primary)' }}>{tradedCount}</strong>
+                </span>
+                <span style={{ color: 'var(--text-muted)' }}>
+                  スキップ <strong style={{ color: 'var(--text-primary)' }}>{skippedCount}</strong>
+                </span>
+                {errorCount > 0 && (
+                  <span style={{ color: 'var(--text-muted)' }}>
+                    エラー <strong style={{ color: 'var(--red)' }}>{errorCount}</strong>
+                  </span>
+                )}
+              </div>
+            )}
+            <button
+              className="btn btn-primary"
+              onClick={handleAutoTrade}
+              disabled={autoTrading}
+              style={{ minWidth: 140, fontWeight: 700, fontSize: 14, padding: '10px 20px' }}
+            >
+              {autoTrading ? (
+                <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ display: 'inline-block', width: 12, height: 12, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+                  分析中...
+                </span>
+              ) : '▶ 自動売買 実行'}
+            </button>
+          </div>
+        </div>
+
+        {/* Results Table */}
+        {autoResults.length > 0 && (
+          <div className="table-container" style={{ marginTop: 4 }}>
+            <table>
+              <thead>
+                <tr>
+                  <th>銘柄</th>
+                  <th>シグナル</th>
+                  <th style={{ textAlign: 'center' }}>信頼度</th>
+                  <th>アクション</th>
+                  <th>理由</th>
+                </tr>
+              </thead>
+              <tbody>
+                {autoResults.map((r, i) => {
+                  const isTraded = r.action && !('error' in r.action);
+                  const isError = r.error || (r.action && 'error' in r.action);
+                  return (
+                    <tr key={i} style={isTraded ? { background: 'rgba(0,200,100,0.04)' } : undefined}>
+                      <td>
+                        <strong className="text-accent mono">{r.symbol}</strong>
+                      </td>
+                      <td>
+                        {r.analysis ? (
+                          <span className={`badge ${r.analysis.signal === 'BUY' ? 'badge-buy' : r.analysis.signal === 'SELL' ? 'badge-sell' : 'badge-hold'}`}>
+                            <span className={`signal-dot ${r.analysis.signal.toLowerCase()}`} />
+                            {r.analysis.signal}
+                          </span>
+                        ) : (
+                          <span className="text-muted">—</span>
+                        )}
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        {r.analysis ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center' }}>
+                            <div style={{ width: 48, height: 4, background: 'var(--bg-input)', borderRadius: 2, overflow: 'hidden' }}>
+                              <div style={{
+                                width: `${r.analysis.confidence}%`, height: '100%', borderRadius: 2,
+                                background: r.analysis.confidence >= 60 ? 'var(--green)' : r.analysis.confidence >= 40 ? 'var(--yellow)' : 'var(--red)',
+                              }} />
+                            </div>
+                            <span className="mono" style={{ fontSize: 11, minWidth: 28 }}>{r.analysis.confidence}%</span>
+                          </div>
+                        ) : '—'}
+                      </td>
+                      <td>
+                        {isTraded && r.action && !('error' in r.action) ? (
+                          <span style={{ fontWeight: 700, color: r.action.type === 'BUY' ? 'var(--green)' : 'var(--red)' }}>
+                            {r.action.type === 'BUY' ? '▲ 購入' : '▼ 売却'} {r.action.shares}株
+                          </span>
+                        ) : isError ? (
+                          <span style={{ fontSize: 11, color: 'var(--red)' }}>エラー</span>
+                        ) : r.skipped ? (
+                          <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>スキップ</span>
+                        ) : (
+                          <span className="text-muted">—</span>
+                        )}
+                      </td>
+                      <td style={{ fontSize: 11, color: 'var(--text-secondary)', maxWidth: 240 }}>
+                        {r.skipped || r.analysis?.reason || r.error || (r.action && 'error' in r.action ? r.action.error : '') || '—'}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Empty state when not yet run */}
+        {!autoTrading && autoResults.length === 0 && (
+          <div style={{ textAlign: 'center', padding: '24px 0 8px', color: 'var(--text-muted)', fontSize: 13 }}>
+            「実行」ボタンで15銘柄を自動スクリーニングして最適な売買を行います
+          </div>
+        )}
+
+        {autoTrading && (
+          <div style={{ textAlign: 'center', padding: '24px 0 8px', color: 'var(--yellow)', fontSize: 13 }}>
+            15銘柄を分析中... しばらくお待ちください
+          </div>
+        )}
+      </div>
+
+      {/* ===== 手動取引 + チャート ===== */}
       <div className="grid-2">
         {/* Left: Trade Form */}
         <div>
           <div className="card" style={{ marginBottom: 24 }}>
             <div className="card-header">
-              <div className="card-title">銘柄選択・分析</div>
+              <div className="card-title">手動取引 / 銘柄分析</div>
             </div>
 
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
@@ -247,22 +389,22 @@ export default function Trading() {
 
           {/* Analysis Result */}
           {analysis && (
-            <div className="card" style={{ marginBottom: 24 }}>
+            <div className="card">
               <div className="card-header">
-              <div className="card-title">
-                {analysis.name ? (
-                  <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <span style={{ fontSize: 18 }}>{analysis.name}</span>
-                    <span className="mono" style={{ fontSize: 12, color: 'var(--text-muted)' }}>{analysis.symbol}</span>
-                  </div>
-                ) : (
-                  `${analysis.symbol} 分析結果`
-                )}
-              </div>
-              <span className={`badge ${analysis.signal === 'BUY' ? 'badge-buy' : analysis.signal === 'SELL' ? 'badge-sell' : 'badge-hold'}`}>
-                <span className={`signal-dot ${analysis.signal.toLowerCase()}`} />
-                {analysis.signal === 'BUY' ? '買いシグナル' : analysis.signal === 'SELL' ? '売りシグナル' : '様子見'}
-              </span>
+                <div className="card-title">
+                  {analysis.name ? (
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <span style={{ fontSize: 18 }}>{analysis.name}</span>
+                      <span className="mono" style={{ fontSize: 12, color: 'var(--text-muted)' }}>{analysis.symbol}</span>
+                    </div>
+                  ) : (
+                    `${analysis.symbol} 分析結果`
+                  )}
+                </div>
+                <span className={`badge ${analysis.signal === 'BUY' ? 'badge-buy' : analysis.signal === 'SELL' ? 'badge-sell' : 'badge-hold'}`}>
+                  <span className={`signal-dot ${analysis.signal.toLowerCase()}`} />
+                  {analysis.signal === 'BUY' ? '買いシグナル' : analysis.signal === 'SELL' ? '売りシグナル' : '様子見'}
+                </span>
               </div>
 
               <div style={{ marginBottom: 12 }}>
@@ -309,66 +451,59 @@ export default function Trading() {
                   </div>
                 </div>
               </div>
+
+              {analysis.indicators.fundamentals && (
+                <div style={{ marginTop: 16 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <div className="stat-label">割安度スコア</div>
+                    {analysis.indicators.valueScore !== null && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ width: 120, height: 6, background: 'var(--bg-input)', borderRadius: 3, overflow: 'hidden' }}>
+                          <div style={{
+                            width: `${analysis.indicators.valueScore}%`, height: '100%',
+                            background: analysis.indicators.valueScore >= 60 ? 'var(--green)' : analysis.indicators.valueScore >= 40 ? 'var(--yellow)' : 'var(--red)',
+                            borderRadius: 3,
+                          }} />
+                        </div>
+                        <span className="mono" style={{
+                          fontSize: 15, fontWeight: 700,
+                          color: analysis.indicators.valueScore >= 60 ? 'var(--green)' : analysis.indicators.valueScore >= 40 ? 'var(--yellow)' : 'var(--red)',
+                        }}>
+                          {analysis.indicators.valueScore.toFixed(1)}pt
+                        </span>
+                        <span style={{
+                          fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 4,
+                          color: analysis.indicators.valueScore >= 70 ? 'var(--green)' : analysis.indicators.valueScore >= 50 ? 'var(--blue)' : analysis.indicators.valueScore >= 30 ? 'var(--yellow)' : 'var(--red)',
+                          background: analysis.indicators.valueScore >= 70 ? 'rgba(0,200,100,0.1)' : analysis.indicators.valueScore >= 50 ? 'rgba(60,120,220,0.1)' : analysis.indicators.valueScore >= 30 ? 'rgba(240,180,0,0.1)' : 'rgba(220,50,50,0.1)',
+                        }}>
+                          {analysis.indicators.valueScore >= 70 ? '割安' : analysis.indicators.valueScore >= 50 ? '適正' : analysis.indicators.valueScore >= 30 ? 'やや高' : '割高'}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 6 }}>
+                    {[
+                      { label: 'PER', value: analysis.indicators.fundamentals.per, fmt: (v: number) => `${v.toFixed(1)}x` },
+                      { label: 'PBR', value: analysis.indicators.fundamentals.pbr, fmt: (v: number) => `${v.toFixed(2)}x` },
+                      { label: 'ROE', value: analysis.indicators.fundamentals.roe, fmt: (v: number) => `${(v * 100).toFixed(1)}%` },
+                      { label: '配当利回り', value: analysis.indicators.fundamentals.dividendYield, fmt: (v: number) => `${(v * 100).toFixed(1)}%` },
+                      { label: '売上成長率', value: analysis.indicators.fundamentals.revenueGrowth, fmt: (v: number) => `${(v * 100).toFixed(1)}%` },
+                    ].map(item => (
+                      <div key={item.label} style={{ padding: '8px 10px', background: 'var(--bg-input)', borderRadius: 'var(--radius-sm)', textAlign: 'center' }}>
+                        <div className="stat-label" style={{ fontSize: 9, marginBottom: 4 }}>{item.label}</div>
+                        <div className="mono" style={{ fontSize: 13, fontWeight: 600 }}>
+                          {item.value !== null ? item.fmt(item.value) : '-'}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <p style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 6 }}>
+                    ※ 割安度スコア = PER(25pt) + PBR(25pt) + 配当利回り(20pt) + ROE(15pt) + 売上成長率(15pt)
+                  </p>
+                </div>
+              )}
             </div>
           )}
-
-          {/* Auto Trade */}
-          <div className="card">
-            <div className="card-header">
-              <div>
-                <div className="card-title">自動売買</div>
-                <div className="card-subtitle">SMA + RSI 戦略で自動分析・売買</div>
-              </div>
-              <button className="btn btn-primary" onClick={handleAutoTrade} disabled={autoTrading}>
-                {autoTrading ? '分析中...' : '実行'}
-              </button>
-            </div>
-
-            {autoResults.length > 0 && (
-              <div className="table-container">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>銘柄</th>
-                      <th>シグナル</th>
-                      <th>アクション</th>
-                      <th>理由</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {autoResults.map((r, i) => (
-                      <tr key={i}>
-                        <td><strong className="text-accent">{r.symbol}</strong></td>
-                        <td>
-                          {r.analysis ? (
-                            <span className={`badge ${r.analysis.signal === 'BUY' ? 'badge-buy' : r.analysis.signal === 'SELL' ? 'badge-sell' : 'badge-hold'}`}>
-                              {r.analysis.signal}
-                            </span>
-                          ) : (
-                            <span className="text-muted">—</span>
-                          )}
-                        </td>
-                        <td>
-                          {r.action && !r.action.error ? (
-                            <span className={r.action.type === 'BUY' ? 'text-green' : 'text-red'}>
-                              {r.action.type === 'BUY' ? '買い' : '売り'} {r.action.shares}株
-                            </span>
-                          ) : r.action?.error ? (
-                            <span className="text-muted" style={{ fontSize: 12 }}>{r.action.error}</span>
-                          ) : (
-                            <span className="text-muted">—</span>
-                          )}
-                        </td>
-                        <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', fontSize: 12, color: 'var(--text-secondary)' }}>
-                          {r.analysis?.reason || r.error || '—'}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
         </div>
 
         {/* Right: Chart */}
@@ -421,7 +556,7 @@ export default function Trading() {
         </div>
       </div>
 
-      {/* Message Toast */}
+      {/* Toast */}
       {message && (
         <div className={`toast ${message.type}`}>
           <span style={{ marginRight: 8 }}>{message.type === 'success' ? '✅' : '❌'}</span>

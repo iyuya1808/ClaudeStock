@@ -172,6 +172,8 @@ export interface Analysis {
     sma50: number | null;
     rsi: number | null;
     priceChange: number;
+    valueScore: number | null;
+    fundamentals: Fundamentals | null;
   };
   dataPoints: number;
   latestDate: string;
@@ -181,6 +183,7 @@ export interface AutoTradeResult {
   symbol: string;
   analysis?: Analysis;
   action?: TradeResult | { error: string };
+  skipped?: string;
   error?: string;
 }
 

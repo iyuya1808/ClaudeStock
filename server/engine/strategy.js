@@ -1,6 +1,5 @@
-import db from '../db.js';
-import { fetchDailyData, getLatestPrice, getStockFundamentals } from '../api/stocks.js';
-import { buyStock, sellStock, getAccount, getPortfolio } from '../api/trading.js';
+import { fetchDailyData, getStockFundamentals } from '../api/stocks.js';
+import { buyStock, sellStock, getAccount, getPortfolio, getTransactions } from '../api/trading.js';
 
 // テクニカル指標計算
 function calculateSMA(prices, period) {
@@ -159,11 +158,64 @@ function generateSignals(data, fundamentals = null) {
   };
 }
 
+const COOLDOWN_DAYS = 3;
+const AUTO_TRADE_CONFIDENCE_THRESHOLD = 40;
+
+// 信頼度・バリュースコアから買い投資割合を算出 (5%〜25%)
+function calcBuyRatio(confidence, valueScore) {
+  // 信頼度 40→5%, 60→12%, 80→20%, 100→25%
+  const baseRatio = 0.05 + ((confidence - 40) / 60) * 0.20;
+  let ratio = Math.min(Math.max(baseRatio, 0.05), 0.25);
+
+  // バリュースコアが高ければ上乗せ（最大+5%）
+  if (valueScore !== null && valueScore >= 60) {
+    ratio += 0.05 * ((valueScore - 60) / 40);
+  }
+
+  return Math.min(ratio, 0.30);
+}
+
+// 信頼度から売却割合を算出 (40%〜100%)
+function calcSellRatio(confidence) {
+  // 信頼度 40→40%, 70→70%, 100→100%
+  const ratio = 0.40 + ((confidence - 40) / 60) * 0.60;
+  return Math.min(Math.max(ratio, 0.40), 1.0);
+}
+
+// 銘柄ごとの最終取引日時をチェックしてクールダウン中かどうか判定
+function isInCooldown(symbol, recentTxns) {
+  const lastTxn = recentTxns.find(t => t.symbol === symbol);
+  if (!lastTxn) return { inCooldown: false };
+
+  const lastDate = new Date(lastTxn.executed_at + 'Z'); // UTCとして扱う
+  const elapsed = Date.now() - lastDate.getTime();
+  const cooldownMs = COOLDOWN_DAYS * 24 * 60 * 60 * 1000;
+
+  if (elapsed < cooldownMs) {
+    const daysAgo = (elapsed / (24 * 60 * 60 * 1000)).toFixed(1);
+    return {
+      inCooldown: true,
+      reason: `クールダウン中（${daysAgo}日前に${lastTxn.type === 'BUY' ? '購入' : '売却'}済み、${COOLDOWN_DAYS}日間は再取引しない）`,
+    };
+  }
+  return { inCooldown: false };
+}
+
+// デフォルトのスクリーニング対象銘柄（日本株ユニバース）
+const DEFAULT_UNIVERSE = [
+  '7203.T', '6758.T', '9984.T', '7974.T', '6861.T',
+  '8306.T', '9432.T', '6501.T', '4063.T', '6902.T',
+  '9983.T', '8035.T', '6594.T', '4519.T', '7832.T',
+];
+
 // 自動売買実行
-async function executeAutoTrade(symbols = ['7203.T', '6758.T', '9984.T', '7974.T', '6861.T']) {
+async function executeAutoTrade(symbols = DEFAULT_UNIVERSE) {
   const results = [];
   const account = getAccount();
   const portfolio = getPortfolio();
+
+  // 直近100件の取引履歴を取得してクールダウン判定に使う
+  const { transactions: recentTxns } = getTransactions(100, 0);
 
   for (const symbol of symbols) {
     try {
@@ -172,33 +224,59 @@ async function executeAutoTrade(symbols = ['7203.T', '6758.T', '9984.T', '7974.T
         getStockFundamentals(symbol),
       ]);
       const analysis = generateSignals(data, fundamentals);
+      const position = portfolio.find(p => p.symbol === symbol);
 
       let action = null;
+      let skipped = null;
 
-      if (analysis.signal === 'BUY' && analysis.confidence >= 30) {
-        const maxInvestment = account.current_cash * 0.1;
-        const currentPrice = analysis.indicators.currentPrice;
-        const shares = Math.floor(maxInvestment / currentPrice);
-
-        if (shares > 0 && maxInvestment >= currentPrice) {
-          try {
-            action = await buyStock(symbol, shares, 'AUTO_SMA_RSI_VALUE', analysis.reason);
-          } catch (e) {
-            action = { error: e.message };
-          }
-        }
-      } else if (analysis.signal === 'SELL' && analysis.confidence >= 30) {
-        const position = portfolio.find(p => p.symbol === symbol);
+      // クールダウンチェック（BUY/SELL 共通）
+      const cooldown = isInCooldown(symbol, recentTxns);
+      if (cooldown.inCooldown) {
+        skipped = cooldown.reason;
+      } else if (analysis.signal === 'BUY' && analysis.confidence >= AUTO_TRADE_CONFIDENCE_THRESHOLD) {
         if (position) {
+          // 既に保有中はスキップ（ナンピン買い防止）
+          skipped = `既に${position.shares}株保有中のためスキップ`;
+        } else {
+          const valueScore = analysis.indicators.valueScore;
+          const buyRatio = calcBuyRatio(analysis.confidence, valueScore);
+          const maxInvestment = account.current_cash * buyRatio;
+          const currentPrice = analysis.indicators.currentPrice;
+          const shares = Math.floor(maxInvestment / currentPrice);
+          const ratioPercent = (buyRatio * 100).toFixed(0);
+
+          if (shares > 0 && maxInvestment >= currentPrice) {
+            try {
+              action = await buyStock(symbol, shares, 'AUTO_SMA_RSI_VALUE',
+                `${analysis.reason}（信頼度${analysis.confidence}% → 現金の${ratioPercent}%を投資）`);
+              account.current_cash = action.remainingCash;
+            } catch (e) {
+              action = { error: e.message };
+            }
+          } else {
+            skipped = '購入可能株数が0（資金不足）';
+          }
+        }
+      } else if (analysis.signal === 'SELL' && analysis.confidence >= AUTO_TRADE_CONFIDENCE_THRESHOLD) {
+        if (!position) {
+          skipped = '保有なしのためスキップ';
+        } else {
+          const sellRatio = calcSellRatio(analysis.confidence);
+          const sharesToSell = Math.max(1, Math.floor(position.shares * sellRatio));
+          const ratioPercent = (sellRatio * 100).toFixed(0);
           try {
-            action = await sellStock(symbol, position.shares, 'AUTO_SMA_RSI_VALUE', analysis.reason);
+            action = await sellStock(symbol, sharesToSell, 'AUTO_SMA_RSI_VALUE',
+              `${analysis.reason}（信頼度${analysis.confidence}% → 保有の${ratioPercent}%を売却）`);
+            account.current_cash = action.remainingCash;
           } catch (e) {
             action = { error: e.message };
           }
         }
+      } else if (analysis.signal === 'HOLD' || analysis.confidence < AUTO_TRADE_CONFIDENCE_THRESHOLD) {
+        skipped = `シグナル弱いためスキップ（${analysis.signal} / 信頼度${analysis.confidence}%）`;
       }
 
-      results.push({ symbol, analysis, action });
+      results.push({ symbol, analysis, action, skipped });
     } catch (error) {
       results.push({ symbol, error: error.message });
     }
