@@ -217,7 +217,11 @@ async function executeAutoTrade(symbols = DEFAULT_UNIVERSE) {
   // 直近100件の取引履歴を取得してクールダウン判定に使う
   const { transactions: recentTxns } = getTransactions(100, 0);
 
-  for (const symbol of symbols) {
+  for (let i = 0; i < symbols.length; i++) {
+    const symbol = symbols[i];
+    // Yahoo Finance のレート制限対策: 銘柄間に間隔を空ける
+    if (i > 0) await new Promise(r => setTimeout(r, 300));
+
     try {
       const [data, fundamentals] = await Promise.all([
         fetchDailyData(symbol),
@@ -305,7 +309,9 @@ async function analyzeStock(symbol) {
 async function screenStocks(symbols) {
   const results = [];
 
-  for (const symbol of symbols) {
+  for (let i = 0; i < symbols.length; i++) {
+    const symbol = symbols[i];
+    if (i > 0) await new Promise(r => setTimeout(r, 300));
     try {
       const [data, fundamentals] = await Promise.all([
         fetchDailyData(symbol),

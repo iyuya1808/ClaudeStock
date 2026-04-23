@@ -6,7 +6,7 @@ const yahooFinance = new YahooFinanceClass();
 // レート制限管理 (Yahoo Financeはゆるめですが一応)
 let requestCount = 0;
 let lastResetTime = Date.now();
-const MAX_REQUESTS_PER_MINUTE = 20; // 少し多めに設定
+const MAX_REQUESTS_PER_MINUTE = 60;
 
 function checkRateLimit() {
   const now = Date.now();

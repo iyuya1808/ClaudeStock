@@ -11,20 +11,9 @@ import {
   Filler,
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
-import { tradingApi, analysisApi, stocksApi, type StockData, type Analysis, type AutoTradeResult } from '../api';
+import { tradingApi, analysisApi, stocksApi, type StockData, type Analysis, type AutoTradeResult, type SearchResult } from '../api';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
-
-const POPULAR_SYMBOLS = [
-  { symbol: '7203.T', name: 'トヨタ' },
-  { symbol: '6758.T', name: 'ソニーG' },
-  { symbol: '9984.T', name: 'ソフトバンクG' },
-  { symbol: '7974.T', name: '任天堂' },
-  { symbol: '6861.T', name: 'キーエンス' },
-  { symbol: '8306.T', name: '三菱UFJ' },
-  { symbol: '9432.T', name: 'NTT' },
-  { symbol: '6501.T', name: '日立' },
-];
 
 export default function Trading() {
   const [symbol, setSymbol] = useState('7203.T');
@@ -37,6 +26,11 @@ export default function Trading() {
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [autoTrading, setAutoTrading] = useState(false);
   const [autoResults, setAutoResults] = useState<AutoTradeResult[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searching, setSearching] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
 
   const showMessage = (type: 'success' | 'error', text: string) => {
     setMessage({ type, text });
@@ -112,6 +106,45 @@ export default function Trading() {
   };
 
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // 銘柄検索（デバウンス）
+  const handleSearchInput = (q: string) => {
+    setSearchQuery(q);
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    if (!q.trim()) { setSearchResults([]); setSearchOpen(false); return; }
+    searchTimer.current = setTimeout(async () => {
+      try {
+        setSearching(true);
+        const results = await stocksApi.search(q);
+        setSearchResults(results.filter(r => r.type === 'EQUITY').slice(0, 8));
+        setSearchOpen(true);
+      } catch {
+        setSearchResults([]);
+      } finally {
+        setSearching(false);
+      }
+    }, 400);
+  };
+
+  const selectSearchResult = (result: SearchResult) => {
+    setSymbol(result.symbol);
+    setSearchQuery(result.name ? `${result.name} (${result.symbol})` : result.symbol);
+    setSearchOpen(false);
+    setStockData([]);
+    setAnalysis(null);
+  };
+
+  // 外クリックでドロップダウンを閉じる
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setSearchOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   useEffect(() => {
     if (!symbol || symbol.length < 3) {
@@ -335,28 +368,50 @@ export default function Trading() {
               <div className="card-title">手動取引 / 銘柄分析</div>
             </div>
 
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
-              {POPULAR_SYMBOLS.map(s => (
-                <button
-                  key={s.symbol}
-                  className={`btn btn-sm ${symbol === s.symbol ? 'btn-primary' : 'btn-ghost'}`}
-                  onClick={() => { setSymbol(s.symbol); setStockData([]); setAnalysis(null); }}
-                >
-                  {s.name}
-                </button>
-              ))}
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">ティッカーシンボル</label>
+            {/* 銘柄検索 */}
+            <div className="form-group" ref={searchRef} style={{ position: 'relative' }}>
+              <label className="form-label">銘柄を検索</label>
               <div style={{ display: 'flex', gap: 8 }}>
-                <input
-                  className="form-input"
-                  value={symbol}
-                  onChange={e => setSymbol(e.target.value.toUpperCase())}
-                  placeholder="例: 7203.T"
-                  style={{ flex: 1 }}
-                />
+                <div style={{ flex: 1, position: 'relative' }}>
+                  <input
+                    className="form-input"
+                    value={searchQuery}
+                    onChange={e => handleSearchInput(e.target.value)}
+                    onFocus={() => searchResults.length > 0 && setSearchOpen(true)}
+                    placeholder="銘柄名・コードで検索 (例: トヨタ、7203)"
+                  />
+                  {searching && (
+                    <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: 'var(--text-muted)' }}>
+                      検索中...
+                    </span>
+                  )}
+                  {searchOpen && searchResults.length > 0 && (
+                    <div style={{
+                      position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 100,
+                      background: 'var(--bg-card)', border: '1px solid var(--border)',
+                      borderRadius: 'var(--radius-sm)', marginTop: 4, overflow: 'hidden',
+                      boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+                    }}>
+                      {searchResults.map(r => (
+                        <button
+                          key={r.symbol}
+                          onClick={() => selectSearchResult(r)}
+                          style={{
+                            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                            width: '100%', padding: '10px 14px', background: 'transparent',
+                            border: 'none', borderBottom: '1px solid var(--border)',
+                            cursor: 'pointer', textAlign: 'left', color: 'var(--text-primary)',
+                          }}
+                          onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-input)')}
+                          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                        >
+                          <span style={{ fontSize: 13 }}>{r.name || r.symbol}</span>
+                          <span className="mono" style={{ fontSize: 11, color: 'var(--text-muted)' }}>{r.symbol}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 <button className="btn btn-primary" onClick={fetchStockData} disabled={loading || !symbol}>
                   {loading ? '取得中...' : 'チャート'}
                 </button>
@@ -364,6 +419,11 @@ export default function Trading() {
                   {analyzing ? '分析中...' : '分析'}
                 </button>
               </div>
+              {symbol && (
+                <div style={{ marginTop: 6, fontSize: 11, color: 'var(--text-muted)' }}>
+                  選択中: <span className="mono" style={{ color: 'var(--yellow)' }}>{symbol}</span>
+                </div>
+              )}
             </div>
 
             <div className="form-group">
