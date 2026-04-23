@@ -9,11 +9,11 @@ import './index.css';
 type Page = 'dashboard' | 'trading' | 'portfolio' | 'history' | 'settings';
 
 const NAV_ITEMS: { id: Page; icon: string; label: string }[] = [
-  { id: 'dashboard', icon: '📊', label: 'ダッシュボード' },
-  { id: 'trading', icon: '💹', label: '取引' },
-  { id: 'portfolio', icon: '💼', label: 'ポートフォリオ' },
-  { id: 'history', icon: '📜', label: '取引履歴' },
-  { id: 'settings', icon: '⚙️', label: '設定' },
+  { id: 'dashboard', icon: '▦', label: 'ダッシュボード' },
+  { id: 'trading', icon: '◈', label: '取引' },
+  { id: 'portfolio', icon: '◉', label: 'ポートフォリオ' },
+  { id: 'history', icon: '≡', label: '取引履歴' },
+  { id: 'settings', icon: '◎', label: '設定' },
 ];
 
 function App() {
@@ -35,7 +35,7 @@ function App() {
       {/* Sidebar */}
       <nav className="sidebar">
         <div className="sidebar-logo">
-          <div className="sidebar-logo-icon">📈</div>
+          <div className="sidebar-logo-icon">▲</div>
           <div>
             <h1>ClaudeStock</h1>
             <span>Investment Simulator</span>
@@ -56,15 +56,16 @@ function App() {
         </div>
 
         <div className="sidebar-footer">
-          <div style={{ 
-            padding: '12px 16px',
+          <div style={{
+            padding: '12px 14px',
             background: 'var(--bg-card)',
             borderRadius: 'var(--radius-md)',
             border: '1px solid var(--border-primary)',
+            borderLeft: '2px solid var(--green)',
           }}>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>🧪 シミュレーション</div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--green-light)' }}>仮想資金モード</div>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>リアルマネー不使用</div>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, letterSpacing: '0.12em', color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase' }}>SIM MODE</div>
+            <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 700, color: 'var(--green-light)' }}>仮想資金モード</div>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>リアルマネー不使用</div>
           </div>
         </div>
       </nav>

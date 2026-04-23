@@ -30,16 +30,16 @@ export default function Settings() {
   return (
     <div className="fade-in">
       <div className="page-header">
-        <h1 className="page-title">⚙️ 設定</h1>
-        <p className="page-subtitle">シミュレーター設定・管理</p>
+        <h1 className="page-title">設定</h1>
+        <p className="page-subtitle">Simulator Config / Account</p>
       </div>
 
       <div className="grid-2">
         {/* API Usage */}
         <div className="card">
           <div className="card-header">
-            <div className="card-title">📡 API使用状況</div>
-            <button className="btn btn-ghost btn-sm" onClick={refreshUsage}>🔄</button>
+            <div className="card-title">API使用状況</div>
+            <button className="btn btn-ghost btn-sm" onClick={refreshUsage}>更新</button>
           </div>
           {usage && (
             <>
@@ -52,7 +52,7 @@ export default function Settings() {
                   <div style={{
                     width: `${(usage.minuteRequests / usage.minuteLimit) * 100}%`,
                     height: '100%',
-                    background: usage.minuteRequests >= usage.minuteLimit ? 'var(--red)' : 'var(--accent-purple)',
+                    background: usage.minuteRequests >= usage.minuteLimit ? 'var(--red)' : 'var(--accent)',
                     borderRadius: 4,
                     transition: 'width 0.3s',
                   }} />
@@ -86,7 +86,7 @@ export default function Settings() {
         {/* Account Management */}
         <div className="card">
           <div className="card-header">
-            <div className="card-title">🔧 アカウント管理</div>
+            <div className="card-title">アカウント管理</div>
           </div>
 
           <div style={{ padding: 20, background: 'var(--bg-input)', borderRadius: 'var(--radius-md)', marginBottom: 16 }}>
@@ -105,12 +105,12 @@ export default function Settings() {
           </div>
 
           <div style={{ padding: 20, background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.15)', borderRadius: 'var(--radius-md)' }}>
-            <h3 style={{ fontSize: 14, fontWeight: 600, color: 'var(--red-light)', marginBottom: 8 }}>⚠️ データリセット</h3>
+            <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 14, fontWeight: 700, color: 'var(--red-light)', marginBottom: 8 }}>データリセット</h3>
             <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 16 }}>
               全てのポジション、取引履歴を削除し、資金を初期状態（¥100,000）に戻します。この操作は取り消せません。
             </p>
             <button className="btn btn-danger" onClick={handleReset} disabled={resetting}>
-              {resetting ? 'リセット中...' : '🗑️ アカウントリセット'}
+              {resetting ? 'リセット中...' : 'アカウントリセット'}
             </button>
           </div>
         </div>

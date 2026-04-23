@@ -32,8 +32,8 @@ export default function Dashboard() {
   return (
     <div className="fade-in">
       <div className="page-header">
-        <h1 className="page-title">📊 ダッシュボード</h1>
-        <p className="page-subtitle">Claude Stock Investment Simulator</p>
+        <h1 className="page-title">ダッシュボード</h1>
+        <p className="page-subtitle">Claude Stock / Overview</p>
       </div>
 
       {/* Stats Grid */}
@@ -78,7 +78,7 @@ export default function Dashboard() {
         <div className="card">
           <div className="card-header">
             <div>
-              <div className="card-title">💼 保有ポジション</div>
+              <div className="card-title">保有ポジション</div>
               <div className="card-subtitle">現在の保有株一覧</div>
             </div>
           </div>
@@ -121,7 +121,7 @@ export default function Dashboard() {
         <div className="card">
           <div className="card-header">
             <div>
-              <div className="card-title">📝 最近の取引</div>
+              <div className="card-title">最近の取引</div>
               <div className="card-subtitle">直近の売買履歴</div>
             </div>
           </div>
@@ -165,7 +165,7 @@ export default function Dashboard() {
       {stats && stats.totalTrades > 0 && (
         <div className="card" style={{ marginTop: 24 }}>
           <div className="card-header">
-            <div className="card-title">📈 取引統計</div>
+            <div className="card-title">取引統計</div>
           </div>
           <div className="stats-grid">
             <div style={{ textAlign: 'center' }}>

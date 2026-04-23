@@ -64,13 +64,13 @@ export default function History() {
     <div className="fade-in">
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
-          <h1 className="page-title">📜 取引履歴</h1>
-          <p className="page-subtitle">全 {total} 件の取引記録</p>
+          <h1 className="page-title">取引履歴</h1>
+          <p className="page-subtitle">Transaction Log / {total} records</p>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button className="btn btn-ghost btn-sm" onClick={refresh}>🔄 更新</button>
           <button className="btn btn-primary btn-sm" onClick={exportCSV} disabled={transactions.length === 0}>
-            📥 CSV出力
+            CSV出力
           </button>
         </div>
       </div>
@@ -100,7 +100,7 @@ export default function History() {
       {/* Transactions Table */}
       <div className="card">
         <div className="card-header">
-          <div className="card-title">📋 取引明細</div>
+          <div className="card-title">取引明細</div>
         </div>
 
         {transactions.length === 0 ? (

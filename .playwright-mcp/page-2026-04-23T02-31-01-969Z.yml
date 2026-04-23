@@ -1,0 +1,64 @@
+- generic [ref=e3]:
+  - navigation [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e6]: ▲
+      - generic [ref=e7]:
+        - heading "ClaudeStock" [level=1] [ref=e8]
+        - generic [ref=e9]: Investment Simulator
+    - generic [ref=e10]:
+      - button "▦ ダッシュボード" [ref=e11] [cursor=pointer]:
+        - generic [ref=e12]: ▦
+        - text: ダッシュボード
+      - button "◈ 取引" [ref=e13] [cursor=pointer]:
+        - generic [ref=e14]: ◈
+        - text: 取引
+      - button "◉ ポートフォリオ" [ref=e15] [cursor=pointer]:
+        - generic [ref=e16]: ◉
+        - text: ポートフォリオ
+      - button "≡ 取引履歴" [ref=e17] [cursor=pointer]:
+        - generic [ref=e18]: ≡
+        - text: 取引履歴
+      - button "◎ 設定" [ref=e19] [cursor=pointer]:
+        - generic [ref=e20]: ◎
+        - text: 設定
+    - generic [ref=e22]:
+      - generic [ref=e23]: SIM MODE
+      - generic [ref=e24]: 仮想資金モード
+      - generic [ref=e25]: リアルマネー不使用
+  - main [ref=e26]:
+    - generic [ref=e27]:
+      - generic [ref=e28]:
+        - heading "ダッシュボード" [level=1] [ref=e29]
+        - paragraph [ref=e30]: Claude Stock / Overview
+      - generic [ref=e31]:
+        - generic [ref=e32]:
+          - generic [ref=e33]: 総資産
+          - generic [ref=e34]: ￥100,000
+          - generic [ref=e35]: ▲ ￥0 (+0.00%)
+        - generic [ref=e36]:
+          - generic [ref=e37]: 現金残高
+          - generic [ref=e38]: ￥100,000
+          - generic [ref=e39]: "初期: ￥100,000"
+        - generic [ref=e40]:
+          - generic [ref=e41]: 保有銘柄数
+          - generic [ref=e42]: "0"
+          - generic [ref=e43]: "評価額: ￥0"
+        - generic [ref=e44]:
+          - generic [ref=e45]: 実現損益
+          - generic [ref=e46]: ￥0
+          - generic [ref=e47]: "勝率: 0.0% (0件)"
+      - generic [ref=e48]:
+        - generic [ref=e49]:
+          - generic [ref=e51]:
+            - generic [ref=e52]: 保有ポジション
+            - generic [ref=e53]: 現在の保有株一覧
+          - generic [ref=e54]:
+            - generic [ref=e55]: 📭
+            - generic [ref=e56]: 保有銘柄がありません。取引画面から株を購入してみましょう。
+        - generic [ref=e57]:
+          - generic [ref=e59]:
+            - generic [ref=e60]: 最近の取引
+            - generic [ref=e61]: 直近の売買履歴
+          - generic [ref=e62]:
+            - generic [ref=e63]: 📋
+            - generic [ref=e64]: 取引履歴がありません。

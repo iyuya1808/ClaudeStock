@@ -114,8 +114,8 @@ export default function Trading() {
     datasets: [{
       label: `${symbol.toUpperCase()} 終値`,
       data: [...stockData].reverse().map(d => d.close),
-      borderColor: '#7c3aed',
-      backgroundColor: 'rgba(124, 58, 237, 0.1)',
+      borderColor: '#e8950a',
+      backgroundColor: 'rgba(232, 149, 10, 0.07)',
       borderWidth: 2,
       pointRadius: 0,
       pointHoverRadius: 4,
@@ -130,24 +130,24 @@ export default function Trading() {
     plugins: {
       legend: { display: false },
       tooltip: {
-        backgroundColor: '#1a1a2e',
-        titleColor: '#e8e8f0',
-        bodyColor: '#a78bfa',
-        borderColor: '#2d2d50',
+        backgroundColor: '#1a1815',
+        titleColor: '#f0ead8',
+        bodyColor: '#f5b030',
+        borderColor: '#332f28',
         borderWidth: 1,
         padding: 12,
-        titleFont: { family: "'Inter', sans-serif" },
-        bodyFont: { family: "'JetBrains Mono', monospace" },
+        titleFont: { family: "'Syne', sans-serif" },
+        bodyFont: { family: "'IBM Plex Mono', monospace" },
       },
     },
     scales: {
       x: {
-        grid: { color: 'rgba(30, 30, 50, 0.5)' },
-        ticks: { color: '#555570', font: { size: 10 } },
+        grid: { color: 'rgba(32, 30, 26, 0.6)' },
+        ticks: { color: '#48453e', font: { size: 10 } },
       },
       y: {
-        grid: { color: 'rgba(30, 30, 50, 0.5)' },
-        ticks: { color: '#555570', font: { family: "'JetBrains Mono', monospace", size: 11 } },
+        grid: { color: 'rgba(32, 30, 26, 0.6)' },
+        ticks: { color: '#48453e', font: { family: "'IBM Plex Mono', monospace", size: 11 } },
       },
     },
     interaction: {
@@ -159,8 +159,8 @@ export default function Trading() {
   return (
     <div className="fade-in">
       <div className="page-header">
-        <h1 className="page-title">💹 取引</h1>
-        <p className="page-subtitle">株の売買と分析</p>
+        <h1 className="page-title">取引</h1>
+        <p className="page-subtitle">Trade Execution / Analysis</p>
       </div>
 
       <div className="grid-2">
@@ -168,7 +168,7 @@ export default function Trading() {
         <div>
           <div className="card" style={{ marginBottom: 24 }}>
             <div className="card-header">
-              <div className="card-title">🔍 銘柄選択・分析</div>
+              <div className="card-title">銘柄選択・分析</div>
             </div>
 
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
@@ -194,10 +194,10 @@ export default function Trading() {
                   style={{ flex: 1 }}
                 />
                 <button className="btn btn-primary" onClick={fetchStockData} disabled={loading || !symbol}>
-                  {loading ? '取得中...' : '📊 チャート'}
+                  {loading ? '取得中...' : 'チャート'}
                 </button>
                 <button className="btn btn-ghost" onClick={analyzeStock} disabled={analyzing || !symbol}>
-                  {analyzing ? '分析中...' : '🔬 分析'}
+                  {analyzing ? '分析中...' : '分析'}
                 </button>
               </div>
             </div>
@@ -215,10 +215,10 @@ export default function Trading() {
 
             <div style={{ display: 'flex', gap: 12 }}>
               <button className="btn btn-success" style={{ flex: 1 }} onClick={handleBuy} disabled={trading || !symbol}>
-                {trading ? '処理中...' : '📈 購入'}
+                {trading ? '処理中...' : '▲ 購入'}
               </button>
               <button className="btn btn-danger" style={{ flex: 1 }} onClick={handleSell} disabled={trading || !symbol}>
-                {trading ? '処理中...' : '📉 売却'}
+                {trading ? '処理中...' : '▼ 売却'}
               </button>
             </div>
           </div>
@@ -227,7 +227,7 @@ export default function Trading() {
           {analysis && (
             <div className="card" style={{ marginBottom: 24 }}>
               <div className="card-header">
-                <div className="card-title">🔬 {analysis.symbol} 分析結果</div>
+                <div className="card-title">{analysis.symbol} 分析結果</div>
                 <span className={`badge ${analysis.signal === 'BUY' ? 'badge-buy' : analysis.signal === 'SELL' ? 'badge-sell' : 'badge-hold'}`}>
                   <span className={`signal-dot ${analysis.signal.toLowerCase()}`} />
                   {analysis.signal === 'BUY' ? '買いシグナル' : analysis.signal === 'SELL' ? '売りシグナル' : '様子見'}
@@ -285,11 +285,11 @@ export default function Trading() {
           <div className="card">
             <div className="card-header">
               <div>
-                <div className="card-title">🤖 自動売買</div>
+                <div className="card-title">自動売買</div>
                 <div className="card-subtitle">SMA + RSI 戦略で自動分析・売買</div>
               </div>
               <button className="btn btn-primary" onClick={handleAutoTrade} disabled={autoTrading}>
-                {autoTrading ? '分析中...' : '⚡ 実行'}
+                {autoTrading ? '分析中...' : '実行'}
               </button>
             </div>
 
@@ -344,7 +344,7 @@ export default function Trading() {
         <div>
           <div className="card">
             <div className="card-header">
-              <div className="card-title">📈 {symbol.toUpperCase()} 株価チャート</div>
+              <div className="card-title">{symbol.toUpperCase()} 株価チャート</div>
               {stockData.length > 0 && (
                 <span className="text-muted" style={{ fontSize: 12 }}>
                   {stockData.length}日分のデータ

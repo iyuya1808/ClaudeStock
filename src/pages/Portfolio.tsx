@@ -9,7 +9,7 @@ import { Doughnut } from 'react-chartjs-2';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
-const COLORS = ['#7c3aed', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#06b6d4', '#8b5cf6'];
+const COLORS = ['#e8950a', '#5ba4f5', '#00c97a', '#ffc844', '#ff3d50', '#c084fc', '#22d3ee', '#f472b6'];
 
 export default function Portfolio() {
   const { data: portfolio, loading } = usePortfolioSummary();
@@ -37,7 +37,7 @@ export default function Portfolio() {
     datasets: [{
       data: positions.map(p => p.marketValue),
       backgroundColor: positions.map((_, i) => COLORS[i % COLORS.length]),
-      borderColor: '#12121c',
+      borderColor: '#141310',
       borderWidth: 3,
       hoverBorderWidth: 0,
     }],
@@ -51,18 +51,18 @@ export default function Portfolio() {
       legend: {
         position: 'bottom' as const,
         labels: {
-          color: '#8888a0',
-          font: { family: "'Inter', sans-serif", size: 12 },
+          color: '#8c8880',
+          font: { family: "'IBM Plex Mono', monospace", size: 11 },
           padding: 16,
           usePointStyle: true,
           pointStyleWidth: 8,
         },
       },
       tooltip: {
-        backgroundColor: '#1a1a2e',
-        titleColor: '#e8e8f0',
-        bodyColor: '#a78bfa',
-        borderColor: '#2d2d50',
+        backgroundColor: '#1a1815',
+        titleColor: '#f0ead8',
+        bodyColor: '#f5b030',
+        borderColor: '#332f28',
         borderWidth: 1,
         padding: 12,
         callbacks: {
@@ -79,8 +79,8 @@ export default function Portfolio() {
   return (
     <div className="fade-in">
       <div className="page-header">
-        <h1 className="page-title">💼 ポートフォリオ</h1>
-        <p className="page-subtitle">保有ポジションと資産配分</p>
+        <h1 className="page-title">ポートフォリオ</h1>
+        <p className="page-subtitle">Positions / Asset Allocation</p>
       </div>
 
       {/* Asset Allocation */}
@@ -110,7 +110,7 @@ export default function Portfolio() {
         {/* Allocation Chart */}
         <div className="card">
           <div className="card-header">
-            <div className="card-title">📊 資産配分</div>
+            <div className="card-title">資産配分</div>
           </div>
           {positions.length > 0 && doughnutData ? (
             <div style={{ height: 300 }}>
@@ -127,7 +127,7 @@ export default function Portfolio() {
         {/* Positions Table */}
         <div className="card">
           <div className="card-header">
-            <div className="card-title">📋 保有銘柄詳細</div>
+            <div className="card-title">保有銘柄詳細</div>
           </div>
           {positions.length > 0 ? (
             <div className="table-container">
