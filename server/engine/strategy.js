@@ -107,7 +107,7 @@ async function executeAutoTrade(symbols = ['7203.T', '6758.T', '9984.T', '7974.T
 
       let action = null;
 
-      if (analysis.signal === 'BUY' && analysis.confidence >= 40) {
+      if (analysis.signal === 'BUY' && analysis.confidence >= 30) {
         // ポジションサイズ: 残高の10%まで
         const maxInvestment = account.current_cash * 0.1;
         const currentPrice = analysis.indicators.currentPrice;
@@ -120,7 +120,7 @@ async function executeAutoTrade(symbols = ['7203.T', '6758.T', '9984.T', '7974.T
             action = { error: e.message };
           }
         }
-      } else if (analysis.signal === 'SELL' && analysis.confidence >= 40) {
+      } else if (analysis.signal === 'SELL' && analysis.confidence >= 30) {
         // 保有していれば全株売却
         const position = portfolio.find(p => p.symbol === symbol);
         if (position) {

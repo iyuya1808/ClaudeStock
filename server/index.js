@@ -151,7 +151,7 @@ app.get('/api/analyze/:symbol', async (req, res) => {
 // 自動売買実行
 app.post('/api/auto-trade', async (req, res) => {
   try {
-    const symbols = req.body.symbols || ['7203.T', '6758.T', '9984.T', '7974.T', '6861.T'];
+    const symbols = req.body?.symbols || ['7203.T', '6758.T', '9984.T', '7974.T', '6861.T'];
     const results = await executeAutoTrade(symbols);
     res.json({ success: true, data: results });
   } catch (error) {
