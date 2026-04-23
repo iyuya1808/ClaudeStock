@@ -15,7 +15,6 @@ export const stocksApi = {
   getDaily: (symbol: string) => apiCall<StockData[]>(`/stocks/${symbol}`),
   getLatest: (symbol: string) => apiCall<LatestPrice>(`/stocks/${symbol}/latest`),
   search: (query: string) => apiCall<SearchResult[]>(`/search?q=${encodeURIComponent(query)}`),
-  getUsage: () => apiCall<ApiUsage>('/usage'),
 };
 
 // 取引API
@@ -78,12 +77,6 @@ export interface SearchResult {
   currency: string;
 }
 
-export interface ApiUsage {
-  minuteRequests: number;
-  minuteLimit: number;
-  dailyRequests: number;
-  dailyLimit: number;
-}
 
 export interface Account {
   id: number;

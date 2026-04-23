@@ -67,4 +67,4 @@ npm run lint
 ## 環境設定
 
 サーバー起動時に `.env` を読み込みます。`.env.example` を `.env` にコピーして使用してください。
-主な変数：`PORT`（デフォルト 3001）。Yahoo Finance は API キーなしで使用されます。サーバー起動時の出力に表示される `ALPHA_VANTAGE_API_KEY` は古いログメッセージの名残であり、機能上の影響はありません。
+主な変数：`PORT`（デフォルト 3001）。Yahoo Finance は API キーなしで使用されます。

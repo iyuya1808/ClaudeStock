@@ -147,14 +147,4 @@ async function searchSymbol(keywords) {
   }
 }
 
-// API使用状況 (Yahoo Financeは無制限に近いですがUI互換性のため)
-function getApiUsage() {
-  return {
-    minuteRequests: requestCount,
-    minuteLimit: MAX_REQUESTS_PER_MINUTE,
-    dailyRequests: 0,
-    dailyLimit: 9999,
-  };
-}
-
-export { fetchDailyData, getLatestPrice, searchSymbol, getApiUsage };
+export { fetchDailyData, getLatestPrice, searchSymbol };

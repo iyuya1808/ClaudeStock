@@ -1,12 +1,9 @@
 import { useState } from 'react';
 import { tradingApi } from '../api';
-import { useApiUsage } from '../hooks/useData';
 
 export default function Settings() {
   const [resetting, setResetting] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const { data: usage, refresh: refreshUsage } = useApiUsage();
-
   const showMessage = (type: 'success' | 'error', text: string) => {
     setMessage({ type, text });
     setTimeout(() => setMessage(null), 4000);
@@ -34,55 +31,7 @@ export default function Settings() {
         <p className="page-subtitle">Simulator Config / Account</p>
       </div>
 
-      <div className="grid-2">
-        {/* API Usage */}
-        <div className="card">
-          <div className="card-header">
-            <div className="card-title">API使用状況</div>
-            <button className="btn btn-ghost btn-sm" onClick={refreshUsage}>更新</button>
-          </div>
-          {usage && (
-            <>
-              <div style={{ marginBottom: 20 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                  <span className="stat-label">1分間リクエスト</span>
-                  <span className="mono" style={{ fontSize: 13 }}>{usage.minuteRequests} / {usage.minuteLimit}</span>
-                </div>
-                <div style={{ height: 8, background: 'var(--bg-input)', borderRadius: 4, overflow: 'hidden' }}>
-                  <div style={{
-                    width: `${(usage.minuteRequests / usage.minuteLimit) * 100}%`,
-                    height: '100%',
-                    background: usage.minuteRequests >= usage.minuteLimit ? 'var(--red)' : 'var(--accent)',
-                    borderRadius: 4,
-                    transition: 'width 0.3s',
-                  }} />
-                </div>
-              </div>
-
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                  <span className="stat-label">1日リクエスト</span>
-                  <span className="mono" style={{ fontSize: 13 }}>{usage.dailyRequests} / {usage.dailyLimit}</span>
-                </div>
-                <div style={{ height: 8, background: 'var(--bg-input)', borderRadius: 4, overflow: 'hidden' }}>
-                  <div style={{
-                    width: `${(usage.dailyRequests / usage.dailyLimit) * 100}%`,
-                    height: '100%',
-                    background: usage.dailyRequests >= usage.dailyLimit ? 'var(--red)' : 'var(--green)',
-                    borderRadius: 4,
-                    transition: 'width 0.3s',
-                  }} />
-                </div>
-              </div>
-
-              <div style={{ marginTop: 16, padding: 12, background: 'var(--bg-input)', borderRadius: 'var(--radius-sm)', fontSize: 12, color: 'var(--text-muted)' }}>
-                💡 Alpha Vantage 無料プラン: 1分間5リクエスト、1日25リクエストまで。
-                株価データはキャッシュされるため、同じ銘柄の再取得はAPIを消費しません。
-              </div>
-            </>
-          )}
-        </div>
-
+      <div style={{ maxWidth: 600, margin: '0 auto' }}>
         {/* Account Management */}
         <div className="card">
           <div className="card-header">
@@ -98,7 +47,7 @@ export default function Settings() {
             <ul style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 2, paddingLeft: 20, marginTop: 8 }}>
               <li>初期資金: ¥100,000</li>
               <li>対象市場: 東京証券取引所（日本株）</li>
-              <li>株価データ: Alpha Vantage API（15分遅延）</li>
+              <li>株価データ: Yahoo Finance API</li>
               <li>売買戦略: SMA20/50クロスオーバー + RSI</li>
               <li>データ保存: SQLite3 ローカルDB</li>
             </ul>

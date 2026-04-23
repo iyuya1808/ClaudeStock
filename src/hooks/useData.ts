@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { tradingApi, stocksApi, analysisApi, type PortfolioSummary, type TradeStats, type TransactionsResult, type ApiUsage, type Analysis, type StockData } from '../api';
+import { tradingApi, stocksApi, analysisApi, type PortfolioSummary, type TradeStats, type TransactionsResult, type Analysis, type StockData } from '../api';
 
 export function usePortfolioSummary() {
   const [data, setData] = useState<PortfolioSummary | null>(null);
@@ -66,22 +66,6 @@ export function useTransactions(limit = 50) {
   return { data, loading, refresh };
 }
 
-export function useApiUsage() {
-  const [data, setData] = useState<ApiUsage | null>(null);
-
-  const refresh = useCallback(async () => {
-    try {
-      const result = await stocksApi.getUsage();
-      setData(result);
-    } catch (e) {
-      console.error(e);
-    }
-  }, []);
-
-  useEffect(() => { refresh(); }, [refresh]);
-
-  return { data, refresh };
-}
 
 export function useAnalysis(symbol: string) {
   const [data, setData] = useState<Analysis | null>(null);

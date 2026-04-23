@@ -7,7 +7,7 @@ import path from 'path';
 dotenv.config();
 
 import db from './db.js';
-import { fetchDailyData, getLatestPrice, searchSymbol, getApiUsage } from './api/stocks.js';
+import { fetchDailyData, getLatestPrice, searchSymbol } from './api/stocks.js';
 import { getAccount, getPortfolio, getTransactions, buyStock, sellStock, getPortfolioSummary, getTradeStats } from './api/trading.js';
 import { executeAutoTrade, analyzeStock } from './engine/strategy.js';
 
@@ -49,10 +49,6 @@ app.get('/api/search', async (req, res) => {
   }
 });
 
-// API使用状況
-app.get('/api/usage', (req, res) => {
-  res.json({ success: true, data: getApiUsage() });
-});
 
 // ===== 取引API =====
 
@@ -175,5 +171,4 @@ app.post('/api/reset', (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`🚀 Claude Stock Server running on http://localhost:${PORT}`);
-  console.log(`📊 API Key: ${process.env.ALPHA_VANTAGE_API_KEY === 'demo' ? 'DEMO (制限あり)' : '設定済み'}`);
 });
