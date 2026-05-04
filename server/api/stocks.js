@@ -6,16 +6,21 @@ const yahooFinance = new YahooFinanceClass();
 // レート制限管理 (Yahoo Financeはゆるめですが一応)
 let requestCount = 0;
 let lastResetTime = Date.now();
-const MAX_REQUESTS_PER_MINUTE = 60;
+const MAX_REQUESTS_PER_MINUTE = 200;
 
-function checkRateLimit() {
+async function checkRateLimit() {
   const now = Date.now();
   if (now - lastResetTime > 60000) {
     requestCount = 0;
     lastResetTime = now;
   }
   if (requestCount >= MAX_REQUESTS_PER_MINUTE) {
-    throw new Error('レート制限: しばらく待ってからお試しください。');
+    // レート制限に達した場合、リセットまで自動的に待機
+    const waitMs = 60000 - (now - lastResetTime) + 500;
+    console.log(`レート制限: ${waitMs}ms待機中...`);
+    await new Promise(resolve => setTimeout(resolve, waitMs));
+    requestCount = 0;
+    lastResetTime = Date.now();
   }
 }
 
@@ -39,7 +44,7 @@ async function fetchDailyData(symbol) {
     return allCached;
   }
 
-  checkRateLimit();
+  await checkRateLimit();
   requestCount++;
 
   try {
@@ -155,7 +160,7 @@ async function getStockFundamentals(symbol) {
   }
 
   try {
-    checkRateLimit();
+    await checkRateLimit();
     requestCount++;
 
     const summary = await yahooFinance.quoteSummary(symbol, {

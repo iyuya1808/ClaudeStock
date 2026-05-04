@@ -93,7 +93,7 @@ export default function Trading() {
     try {
       setAutoTrading(true);
       setAutoResults([]);
-      // 銘柄リストはサーバーのデフォルトユニバース（15銘柄）を使用
+      // 銘柄リストはサーバーのデフォルトユニバース（50銘柄）を使用
       const results = await analysisApi.autoTrade([]);
       setAutoResults(results);
       const traded = results.filter(r => r.action && !('error' in r.action)).length;
@@ -237,7 +237,7 @@ export default function Trading() {
               }}>AUTO</span>
             </div>
             <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: 0 }}>
-              15銘柄をスクリーニング → SMA × RSI × バリュースコアで最適銘柄を自動選別・売買
+              50銘柄をスクリーニング → SMA × RSI × バリュースコアで最適銘柄を自動選別・売買
             </p>
           </div>
 
@@ -348,13 +348,13 @@ export default function Trading() {
         {/* Empty state when not yet run */}
         {!autoTrading && autoResults.length === 0 && (
           <div style={{ textAlign: 'center', padding: '24px 0 8px', color: 'var(--text-muted)', fontSize: 13 }}>
-            「実行」ボタンで15銘柄を自動スクリーニングして最適な売買を行います
+            「実行」ボタンで50銘柄を自動スクリーニングして最適な売買を行います
           </div>
         )}
 
         {autoTrading && (
           <div style={{ textAlign: 'center', padding: '24px 0 8px', color: 'var(--yellow)', fontSize: 13 }}>
-            15銘柄を分析中... しばらくお待ちください
+            50銘柄を分析中... しばらくお待ちください（約30秒）
           </div>
         )}
       </div>

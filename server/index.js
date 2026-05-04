@@ -147,7 +147,7 @@ app.get('/api/analyze/:symbol', async (req, res) => {
 // 自動売買実行
 app.post('/api/auto-trade', async (req, res) => {
   try {
-    // 空配列 or 未指定の場合はデフォルトユニバース（15銘柄）を使用
+    // 空配列 or 未指定の場合はデフォルトユニバース（50銘柄）を使用
     const reqSymbols = req.body?.symbols;
     const symbols = Array.isArray(reqSymbols) && reqSymbols.length > 0 ? reqSymbols : undefined;
     const results = await executeAutoTrade(symbols);
@@ -160,11 +160,14 @@ app.post('/api/auto-trade', async (req, res) => {
 // 割安株スクリーニング
 app.get('/api/screen', async (req, res) => {
   try {
-    const defaultSymbols = '7203.T,6758.T,9984.T,7974.T,6861.T,4063.T,8306.T,9432.T,6902.T,7741.T';
-    const symbols = (req.query.symbols || defaultSymbols)
-      .split(',')
-      .map(s => s.trim().toUpperCase())
-      .filter(Boolean);
+    let symbols;
+    if (req.query.symbols) {
+      symbols = req.query.symbols
+        .split(',')
+        .map(s => s.trim().toUpperCase())
+        .filter(Boolean);
+    }
+    // symbols が未指定なら screenStocks 内でデフォルトユニバースを使用
     const results = await screenStocks(symbols);
     res.json({ success: true, data: results });
   } catch (error) {

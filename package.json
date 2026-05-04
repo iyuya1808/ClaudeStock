@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "concurrently \"vite\" \"node --watch server/index.js\"",
+    "dev:debug": "concurrently \"vite\" \"node --watch --inspect server/index.js\"",
     "dev:front": "vite",
     "dev:server": "node --watch server/index.js",
     "build": "tsc -b && vite build",
