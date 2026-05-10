@@ -1,9 +1,12 @@
 import { usePortfolioSummary, useTradeStats, useTransactions } from '../hooks/useData';
+import { tradingApi } from '../api';
+import { useState } from 'react';
 
 export default function Dashboard() {
-  const { data: portfolio, loading: portfolioLoading } = usePortfolioSummary();
-  const { data: stats } = useTradeStats();
-  const { data: txData } = useTransactions(5);
+  const { data: portfolio, loading: portfolioLoading, refresh: refreshPortfolio } = usePortfolioSummary();
+  const { data: stats, refresh: refreshStats } = useTradeStats();
+  const { data: txData, refresh: refreshTx } = useTransactions(5);
+  const [isTopUpLoading, setIsTopUpLoading] = useState(false);
 
   if (portfolioLoading) {
     return (
@@ -29,11 +32,34 @@ export default function Dashboard() {
     return `${val >= 0 ? '+' : ''}${val.toFixed(2)}%`;
   };
 
+  const handleTopUp = async () => {
+    try {
+      setIsTopUpLoading(true);
+      await tradingApi.topUp(100000);
+      await Promise.all([refreshPortfolio(), refreshStats(), refreshTx()]);
+      alert('10万円（仮想）をチャージしました！');
+    } catch (e) {
+      alert('エラーが発生しました');
+    } finally {
+      setIsTopUpLoading(false);
+    }
+  };
+
   return (
     <div className="fade-in">
-      <div className="page-header">
-        <h1 className="page-title">ダッシュボード</h1>
-        <p className="page-subtitle">Claude Stock / Overview</p>
+      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+        <div>
+          <h1 className="page-title">ダッシュボード</h1>
+          <p className="page-subtitle">Claude Stock / Overview</p>
+        </div>
+        <button 
+          className="btn btn-primary" 
+          onClick={handleTopUp} 
+          disabled={isTopUpLoading}
+          style={{ marginBottom: '4px' }}
+        >
+          {isTopUpLoading ? '処理中...' : '💰 10万円もらう'}
+        </button>
       </div>
 
       {/* Stats Grid */}
@@ -68,7 +94,7 @@ export default function Dashboard() {
             {formatCurrency(stats?.totalRealizedPnl || 0)}
           </div>
           <div className="stat-change" style={{color: 'var(--text-muted)'}}>
-            勝率: {stats?.winRate || '0.0'}% ({stats?.totalSells || 0}件)
+            勝率: {stats?.winRate || '0.0%'} ({stats?.totalSells || 0}件)
           </div>
         </div>
       </div>
@@ -182,7 +208,7 @@ export default function Dashboard() {
             </div>
             <div style={{ textAlign: 'center' }}>
               <div className="stat-label">勝率</div>
-              <div style={{ fontSize: 24, fontWeight: 700, color: 'var(--accent-purple-light)', fontFamily: "'JetBrains Mono', monospace" }}>{stats.winRate}%</div>
+              <div style={{ fontSize: 24, fontWeight: 700, color: 'var(--accent-purple-light)', fontFamily: "'JetBrains Mono', monospace" }}>{stats.winRate}</div>
             </div>
           </div>
         </div>

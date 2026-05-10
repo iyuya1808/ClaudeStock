@@ -36,6 +36,11 @@ export const tradingApi = {
     apiCall<TransactionsResult>(`/transactions?limit=${limit}&offset=${offset}`),
   getStats: () => apiCall<TradeStats>('/stats'),
   reset: () => apiCall<{ message: string }>('/reset', { method: 'POST' }),
+  // 10万円チャージ
+  topUp: (amount = 100000) => apiCall<Account>('/topup', { 
+    method: 'POST',
+    body: JSON.stringify({ amount })
+  }),
 };
 
 // 分析API

@@ -8,7 +8,7 @@ dotenv.config();
 
 import db from './db.js';
 import { fetchDailyData, getLatestPrice, searchSymbol } from './api/stocks.js';
-import { getAccount, getPortfolio, getTransactions, buyStock, sellStock, getPortfolioSummary, getTradeStats } from './api/trading.js';
+import { getAccount, getPortfolio, getTransactions, buyStock, sellStock, getPortfolioSummary, getTradeStats, topUp } from './api/trading.js';
 import { executeAutoTrade, analyzeStock, screenStocks } from './engine/strategy.js';
 
 const app = express();
@@ -170,6 +170,17 @@ app.get('/api/screen', async (req, res) => {
     // symbols が未指定なら screenStocks 内でデフォルトユニバースを使用
     const results = await screenStocks(symbols);
     res.json({ success: true, data: results });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+});
+
+// ===== アカウントチャージ =====
+app.post('/api/topup', (req, res) => {
+  try {
+    const amount = req.body.amount || 100000;
+    const account = topUp(amount);
+    res.json({ success: true, data: account });
   } catch (error) {
     res.status(400).json({ success: false, error: error.message });
   }

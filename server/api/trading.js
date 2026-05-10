@@ -196,4 +196,9 @@ function getTradeStats() {
   return { ...stats, winRate };
 }
 
-export { getAccount, getPortfolio, getTransactions, buyStock, sellStock, getPortfolioSummary, getTradeStats };
+function topUp(amount = 100000) {
+  db.prepare('UPDATE account SET current_cash = current_cash + ?, updated_at = CURRENT_TIMESTAMP WHERE id = 1').run(amount);
+  return getAccount();
+}
+
+export { getAccount, getPortfolio, getTransactions, buyStock, sellStock, getPortfolioSummary, getTradeStats, topUp };
