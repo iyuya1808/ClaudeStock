@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { tradingApi } from '../api';
+import { useTheme } from '../hooks/useTheme';
 
 export default function Settings() {
+  const { theme, setTheme } = useTheme();
   const [resetting, setResetting] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const showMessage = (type: 'success' | 'error', text: string) => {
@@ -31,7 +33,32 @@ export default function Settings() {
         <p className="page-subtitle">Simulator Config / Account</p>
       </div>
 
-      <div style={{ maxWidth: 600, margin: '0 auto' }}>
+      <div style={{ maxWidth: 600, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 24 }}>
+        {/* Appearance */}
+        <div className="card">
+          <div className="card-header">
+            <div className="card-title">外観</div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <button 
+              className={`btn ${theme === 'dark' ? 'btn-primary' : 'btn-ghost'}`}
+              onClick={() => setTheme('dark')}
+              style={{ height: 80, flexDirection: 'column', gap: 8 }}
+            >
+              <span style={{ fontSize: 20 }}>☾</span>
+              ダークモード
+            </button>
+            <button 
+              className={`btn ${theme === 'light' ? 'btn-primary' : 'btn-ghost'}`}
+              onClick={() => setTheme('light')}
+              style={{ height: 80, flexDirection: 'column', gap: 8 }}
+            >
+              <span style={{ fontSize: 20 }}>☀</span>
+              ライトモード
+            </button>
+          </div>
+        </div>
+
         {/* Account Management */}
         <div className="card">
           <div className="card-header">

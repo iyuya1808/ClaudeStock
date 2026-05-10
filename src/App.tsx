@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTheme } from './hooks/useTheme';
 import Dashboard from './pages/Dashboard';
 import Trading from './pages/Trading';
 import Portfolio from './pages/Portfolio';
@@ -20,6 +21,7 @@ const NAV_ITEMS: { id: Page; icon: string; label: string }[] = [
 
 function App() {
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
+  const { theme, toggleTheme } = useTheme();
 
   const renderPage = () => {
     switch (currentPage) {
@@ -59,6 +61,36 @@ function App() {
         </div>
 
         <div className="sidebar-footer">
+          <button 
+            onClick={toggleTheme}
+            className="nav-link"
+            style={{ marginBottom: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span className="nav-icon">{theme === 'light' ? '☀' : '☾'}</span>
+              <span>{theme === 'light' ? 'ライトモード' : 'ダークモード'}</span>
+            </div>
+            <div style={{ 
+              width: 32, 
+              height: 16, 
+              background: theme === 'light' ? 'var(--accent)' : 'var(--border-accent)', 
+              borderRadius: 8,
+              position: 'relative',
+              transition: 'background 0.2s'
+            }}>
+              <div style={{ 
+                width: 12, 
+                height: 12, 
+                background: '#fff', 
+                borderRadius: '50%', 
+                position: 'absolute',
+                top: 2,
+                left: theme === 'light' ? 18 : 2,
+                transition: 'left 0.2s'
+              }} />
+            </div>
+          </button>
+
           <div style={{
             padding: '12px 14px',
             background: 'var(--bg-card)',

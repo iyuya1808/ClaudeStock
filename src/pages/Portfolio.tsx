@@ -1,4 +1,5 @@
 import { usePortfolioSummary } from '../hooks/useData';
+import { useTheme } from '../hooks/useTheme';
 import {
   Chart as ChartJS,
   ArcElement,
@@ -12,6 +13,7 @@ ChartJS.register(ArcElement, Tooltip, Legend);
 const COLORS = ['#e8950a', '#5ba4f5', '#00c97a', '#ffc844', '#ff3d50', '#c084fc', '#22d3ee', '#f472b6'];
 
 export default function Portfolio() {
+  const { theme } = useTheme();
   const { data: portfolio, loading } = usePortfolioSummary();
 
   if (loading) {
@@ -37,9 +39,9 @@ export default function Portfolio() {
     datasets: [{
       data: positions.map(p => p.marketValue),
       backgroundColor: positions.map((_, i) => COLORS[i % COLORS.length]),
-      borderColor: '#141310',
-      borderWidth: 3,
-      hoverBorderWidth: 0,
+      borderColor: theme === 'dark' ? 'var(--bg-card)' : 'var(--bg-card)',
+      borderWidth: 1,
+      hoverBorderWidth: 1,
     }],
   } : null;
 
@@ -51,7 +53,7 @@ export default function Portfolio() {
       legend: {
         position: 'bottom' as const,
         labels: {
-          color: '#8c8880',
+          color: theme === 'dark' ? '#8c8880' : '#5c5952',
           font: { family: "'IBM Plex Mono', monospace", size: 11 },
           padding: 16,
           usePointStyle: true,
@@ -59,10 +61,10 @@ export default function Portfolio() {
         },
       },
       tooltip: {
-        backgroundColor: '#1a1815',
-        titleColor: '#f0ead8',
-        bodyColor: '#f5b030',
-        borderColor: '#332f28',
+        backgroundColor: theme === 'dark' ? '#1a1815' : '#ffffff',
+        titleColor: theme === 'dark' ? '#f0ead8' : '#1c1b18',
+        bodyColor: theme === 'dark' ? '#f5b030' : '#b45309',
+        borderColor: theme === 'dark' ? '#332f28' : '#e8e6df',
         borderWidth: 1,
         padding: 12,
         callbacks: {

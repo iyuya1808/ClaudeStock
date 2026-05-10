@@ -16,6 +16,17 @@ export default function History() {
     return date.toLocaleDateString('ja-JP', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
   };
 
+  const STRATEGY_DETAILS: Record<string, { name: string, description: string }> = {
+    'MANUAL': {
+      name: '手動取引',
+      description: 'ユーザーによって直接実行された売買操作です。'
+    },
+    'AUTO_SMA_RSI_VALUE': {
+      name: '三要素統合戦略',
+      description: '短期(20日)・中期(50日)移動平均線の交差、RSIによる過熱感、およびファンダメンタルズ（PER/PBR/ROE等）に基づく割安度を組み合わせて、総合的な信頼度から売買を判断するアルゴリズムです。'
+    }
+  };
+
   const exportCSV = () => {
     if (transactions.length === 0) return;
     const headers = ['日時', '種別', '銘柄', '株数', '価格', '金額', '損益', '戦略', '理由'];
@@ -147,11 +158,17 @@ export default function History() {
                       )}
                     </td>
                     <td>
-                      {tx.strategy !== 'MANUAL' ? (
-                        <span className="badge badge-auto">{tx.strategy}</span>
-                      ) : (
-                        <span className="text-muted" style={{ fontSize: 12 }}>手動</span>
-                      )}
+                      <div className="tooltip-container">
+                        {tx.strategy !== 'MANUAL' ? (
+                          <span className="badge badge-auto">{tx.strategy}</span>
+                        ) : (
+                          <span className="text-muted" style={{ fontSize: 12 }}>手動</span>
+                        )}
+                        <div className="tooltip-text">
+                          <span className="tooltip-title">{STRATEGY_DETAILS[tx.strategy]?.name || tx.strategy}</span>
+                          {STRATEGY_DETAILS[tx.strategy]?.description || '詳細な戦略説明はありません。'}
+                        </div>
+                      </div>
                     </td>
                     <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', fontSize: 12, color: 'var(--text-secondary)' }}>
                       {tx.reason || '—'}

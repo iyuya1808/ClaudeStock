@@ -12,10 +12,12 @@ import {
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 import { tradingApi, analysisApi, stocksApi, type StockData, type Analysis, type AutoTradeResult, type SearchResult } from '../api';
+import { useTheme } from '../hooks/useTheme';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
 
 export default function Trading() {
+  const { theme } = useTheme();
   const [symbol, setSymbol] = useState('7203.T');
   const [shares, setShares] = useState(1);
   const [stockData, setStockData] = useState<StockData[]>([]);
@@ -183,10 +185,10 @@ export default function Trading() {
     plugins: {
       legend: { display: false },
       tooltip: {
-        backgroundColor: '#1a1815',
-        titleColor: '#f0ead8',
-        bodyColor: '#f5b030',
-        borderColor: '#332f28',
+        backgroundColor: theme === 'dark' ? '#1a1815' : '#ffffff',
+        titleColor: theme === 'dark' ? '#f0ead8' : '#1c1b18',
+        bodyColor: theme === 'dark' ? '#f5b030' : '#b45309',
+        borderColor: theme === 'dark' ? '#332f28' : '#e8e6df',
         borderWidth: 1,
         padding: 12,
         titleFont: { family: "'Syne', sans-serif" },
@@ -195,12 +197,12 @@ export default function Trading() {
     },
     scales: {
       x: {
-        grid: { color: 'rgba(32, 30, 26, 0.6)' },
-        ticks: { color: '#48453e', font: { size: 10 } },
+        grid: { color: theme === 'dark' ? 'rgba(32, 30, 26, 0.6)' : 'rgba(232, 230, 223, 0.6)' },
+        ticks: { color: theme === 'dark' ? '#48453e' : '#9c9990', font: { size: 10 } },
       },
       y: {
-        grid: { color: 'rgba(32, 30, 26, 0.6)' },
-        ticks: { color: '#48453e', font: { family: "'IBM Plex Mono', monospace", size: 11 } },
+        grid: { color: theme === 'dark' ? 'rgba(32, 30, 26, 0.6)' : 'rgba(232, 230, 223, 0.6)' },
+        ticks: { color: theme === 'dark' ? '#48453e' : '#9c9990', font: { family: "'IBM Plex Mono', monospace", size: 11 } },
       },
     },
     interaction: { intersect: false, mode: 'index' as const },

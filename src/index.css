@@ -61,6 +61,40 @@
   --transition-fast: 120ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-normal: 220ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-slow: 380ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Background Glows */
+  --bg-glow-1: rgba(232, 149, 10, 0.035);
+  --bg-glow-2: rgba(0, 201, 122, 0.025);
+}
+
+.light-theme {
+  --bg-primary: #fdfdfc;
+  --bg-secondary: #f6f5f0;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f9f9f7;
+  --bg-elevated: #ffffff;
+  --bg-input: #f8f7f4;
+
+  --text-primary: #1c1b18;
+  --text-secondary: #5c5952;
+  --text-muted: #9c9990;
+  --text-accent: #b45309;
+
+  --border-primary: #e8e6df;
+  --border-accent: #dcd9d0;
+
+  --accent-glow: rgba(232, 149, 10, 0.08);
+  --accent-glow-strong: rgba(232, 149, 10, 0.15);
+
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 12px 48px rgba(0, 0, 0, 0.12);
+
+  --green-bg: rgba(0, 201, 122, 0.06);
+  --red-bg: rgba(255, 61, 80, 0.06);
+
+  --bg-glow-1: rgba(232, 149, 10, 0.015);
+  --bg-glow-2: rgba(0, 201, 122, 0.01);
 }
 
 *, *::before, *::after {
@@ -90,8 +124,8 @@ body::before {
   position: fixed;
   inset: 0;
   background:
-    radial-gradient(ellipse 80% 50% at 15% 10%, rgba(232, 149, 10, 0.035) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 40% at 85% 85%, rgba(0, 201, 122, 0.025) 0%, transparent 55%);
+    radial-gradient(ellipse 80% 50% at 15% 10%, var(--bg-glow-1) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 85% 85%, var(--bg-glow-2) 0%, transparent 55%);
   pointer-events: none;
   z-index: 0;
 }
@@ -382,7 +416,15 @@ body::before {
 /* ===== Tables ===== */
 .table-container {
   overflow-x: auto;
+  overflow-y: visible; /* Allow tooltips to show */
   border-radius: var(--radius-md);
+  min-height: 120px; /* Ensure space for tooltips even with few rows */
+}
+
+@media (min-width: 1024px) {
+  .table-container {
+    overflow: visible; /* On desktop, allow everything to show */
+  }
 }
 
 table {
@@ -413,10 +455,12 @@ tbody td {
 
 tbody tr {
   transition: background var(--transition-fast);
+  position: relative;
 }
 
 tbody tr:hover {
   background: var(--bg-card-hover);
+  z-index: 10; /* Ensure the hovered row is above others for tooltips */
 }
 
 tbody tr:hover td {
@@ -764,6 +808,63 @@ select.form-input {
 .toast.success {
   border-color: rgba(0, 201, 122, 0.3);
   border-left: 3px solid var(--green);
+}
+
+/* ===== Tooltip ===== */
+.tooltip-container {
+  position: relative;
+  display: inline-block;
+  cursor: help;
+}
+
+.tooltip-text {
+  visibility: hidden;
+  width: 220px; /* Narrower to prevent side clipping */
+  background-color: var(--bg-elevated);
+  color: var(--text-primary);
+  text-align: left;
+  border: 1px solid var(--border-accent);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  position: absolute;
+  z-index: 1000;
+  bottom: calc(100% + 10px);
+  right: -10px; /* Align to the right with slight offset */
+  opacity: 0;
+  transition: opacity 0.2s, visibility 0.2s, transform 0.2s;
+  box-shadow: var(--shadow-lg);
+  font-size: 11.5px;
+  font-family: 'Noto Sans JP', sans-serif;
+  line-height: 1.6;
+  white-space: normal;
+  pointer-events: none;
+  border-bottom: 2px solid var(--accent);
+}
+
+.tooltip-container:hover .tooltip-text {
+  visibility: visible;
+  opacity: 1;
+  transform: translateY(-4px);
+}
+
+.tooltip-text::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  right: 24px; /* Move arrow to the right */
+  border-width: 6px;
+  border-style: solid;
+  border-color: var(--accent) transparent transparent transparent;
+}
+
+.tooltip-title {
+  display: block;
+  font-weight: 700;
+  color: var(--accent-light);
+  margin-bottom: 6px;
+  font-size: 12px;
+  border-bottom: 1px solid var(--border-primary);
+  padding-bottom: 4px;
 }
 
 .toast.error {
