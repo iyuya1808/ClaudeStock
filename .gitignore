@@ -27,3 +27,8 @@ dist-ssr
 .env
 .env.local
 .env.*.local
+
+# SQLite database
+data/*.db
+data/*.db-wal
+data/*.db-shm
