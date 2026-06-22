@@ -67,18 +67,35 @@ npm run lint
 - `transactions`: 取引履歴
 - `stock_cache`: 株価OHLCVキャッシュ（1時間有効）
 
+`data/claude_stock.db` 本体はgit管理対象です（`-wal`/`-shm`は一時ファイルのため対象外）。売買（手動・自動売買とも）が発生すると `server/gitSync.js` が15秒デバウンスでWALをチェックポイントし、`data/claude_stock.db` だけをコミット・pushします（他の変更中ファイルには影響しません）。push先（`git push`）が失敗してもサーバーは止まらず、エラーはログに出力されます。
+
 ## 環境変数 (`.env`)
 
 | 変数 | デフォルト | 説明 |
 |---|---|---|
 | `PORT` | `3001` | バックエンドのポート |
-| `DATA_DIR` | `data/` | SQLiteの保存先（Railway等の永続ボリューム用） |
+| `DATA_DIR` | `data/` | SQLiteの保存先 |
 | `AUTO_TRADE_SCHEDULE_ENABLED` | `true` | 自動売買の定期実行を有効化するか |
 | `AUTO_TRADE_INTERVAL_MINUTES` | `60` | 定期実行の間隔（分） |
 | `AUTO_TRADE_SCHEDULE_UNIVERSE` | `ALL_TSE` | 定期実行の対象（`ALL_TSE` または `DEFAULT_50`） |
 
 Yahoo Finance はAPIキー不要で利用しています。
 
-## デプロイ (Railway)
+## ローカル常時起動 (macOS)
 
-`railway.json` に基づき `npm run build` → `npm start` で単一サービスとして動作します。SQLiteを永続化するため、Railwayでボリュームを作成し `DATA_DIR` が指すパスにマウントしてください。
+自動売買スケジューラ（1時間ごと）を動かし続けるには、VS Codeなどを開いたままサーバープロセスを起動しておきます。Macがスリープ/シャットダウンしない限り動作し続けます。
+
+### VS Code / Cursorの「実行とデバッグ」から起動する場合
+
+サイドバーの「実行とデバッグ」（または `F5`）から「ClaudeStock」を選択すると、`npm run dev`（フロントエンド + バックエンド同時起動、`.vscode/tasks.json`の`dev`タスク）が実行された後、`http://localhost:5173` がプレビューで開きます（`.vscode/launch.json`）。
+
+### ターミナルから起動する場合
+
+```bash
+# VS Codeの統合ターミナルなどで実行（ビルド + 起動）
+bash scripts/start.sh
+```
+
+`scripts/start.sh` は `npm run build` → `node server/index.js` を実行し、ログは標準出力にそのまま流れます。停止するにはターミナルで `Ctrl+C`。
+
+> macOSの `launchd` によるバックグラウンド常駐は、`~/Desktop` 以下のプロジェクトに対してはプライバシー保護（TCC）によりアクセス拒否されるため非対応です。常時起動が必要な場合はプロジェクトを `~/Desktop` 以外へ移動してから検討してください。

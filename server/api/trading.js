@@ -1,5 +1,6 @@
 import db from '../db.js';
 import { getLatestPrice } from './stocks.js';
+import { scheduleDbSync } from '../gitSync.js';
 
 // アカウント情報取得
 function getAccount() {
@@ -53,6 +54,7 @@ async function buyStock(symbol, shares, strategy = 'MANUAL', reason = '') {
   });
 
   buyTransaction();
+  scheduleDbSync();
 
   return {
     type: 'BUY',
@@ -102,6 +104,7 @@ async function sellStock(symbol, shares, strategy = 'MANUAL', reason = '') {
   });
 
   sellTransaction();
+  scheduleDbSync();
 
   return {
     type: 'SELL',
@@ -198,6 +201,7 @@ function getTradeStats() {
 
 function topUp(amount = 100000) {
   db.prepare('UPDATE account SET current_cash = current_cash + ?, updated_at = CURRENT_TIMESTAMP WHERE id = 1').run(amount);
+  scheduleDbSync();
   return getAccount();
 }
 

@@ -32,7 +32,7 @@ npm run lint
 - **フロントエンド**: React + TypeScript (Vite)、`localhost:5173` で動作
 - **バックエンド**: Express.js (Node.js ESM)、`localhost:3001` で動作
 
-フロントエンドは `src/api.ts` を介してバックエンドを呼び出します。ベースURLは相対パス `/api` で、開発時は `vite.config.ts` のプロキシ設定（`/api` → `http://localhost:3001`）経由、本番（Railway等）では Express が `dist/` を同一オリジンで配信するため変更不要です。APIレスポンスのすべての型定義は `src/api.ts` に配置されています。
+フロントエンドは `src/api.ts` を介してバックエンドを呼び出します。ベースURLは相対パス `/api` で、開発時は `vite.config.ts` のプロキシ設定（`/api` → `http://localhost:3001`）経由、本番ビルド後（`npm run build` → `npm start`）は Express が `dist/` を同一オリジンで配信するため変更不要です。APIレスポンスのすべての型定義は `src/api.ts` に配置されています。
 
 ### バックエンド (`server/`)
 
@@ -53,9 +53,9 @@ npm run lint
 - `AUTO_TRADE_INTERVAL_MINUTES`（デフォルト `60`）
 - `AUTO_TRADE_SCHEDULE_UNIVERSE`（`ALL_TSE` | `DEFAULT_50`、デフォルト `ALL_TSE`）
 
-### デプロイ（Railway）
+### ローカル常時起動（macOS）
 
-`railway.json` で `npm run build` → `npm start` を実行する単一サービス構成。SQLiteの永続化には Railway のボリュームを `DATA_DIR` が指す場所にマウントすること。
+`bash scripts/start.sh`（`npm run build` → `node server/index.js`）をVS Codeなどのターミナルで起動したままにすることで、Macが起きている間は自動売買スケジューラが動き続ける。`~/Desktop`配下のプロジェクトは`launchd`のバックグラウンド常駐がTCC（プライバシー保護）でブロックされるため非対応。詳細はREADMEの「ローカル常時起動 (macOS)」節を参照。
 
 ### データベース (`data/claude_stock.db`)
 

@@ -28,7 +28,6 @@ dist-ssr
 .env.local
 .env.*.local
 
-# SQLite database
-data/*.db
+# SQLite database (WAL/SHM are transient; the .db file itself is tracked)
 data/*.db-wal
 data/*.db-shm
