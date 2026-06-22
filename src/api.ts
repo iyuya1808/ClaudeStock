@@ -1,4 +1,5 @@
-const API_BASE = 'http://localhost:3001/api';
+// 開発時は vite.config.ts のプロキシ、本番はExpressの同一オリジン配信で /api にアクセスする
+const API_BASE = '/api';
 
 async function apiCall<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${endpoint}`, {
@@ -46,13 +47,16 @@ export const tradingApi = {
 // 分析API
 export const analysisApi = {
   analyze: (symbol: string) => apiCall<Analysis>(`/analyze/${symbol}`),
-  autoTrade: (symbols?: string[]) =>
+  autoTrade: (symbols?: string[], universe?: 'ALL_TSE') =>
     apiCall<AutoTradeResult[]>('/auto-trade', {
       method: 'POST',
-      body: JSON.stringify({ symbols }),
+      body: JSON.stringify({ symbols, universe }),
     }),
-  screen: (symbols?: string[]) => {
-    const q = symbols ? `?symbols=${symbols.join(',')}` : '';
+  screen: (symbols?: string[], universe?: 'ALL_TSE') => {
+    const params = new URLSearchParams();
+    if (universe) params.set('universe', universe);
+    else if (symbols) params.set('symbols', symbols.join(','));
+    const q = params.toString() ? `?${params.toString()}` : '';
     return apiCall<ScreenResult[]>(`/screen${q}`);
   },
 };

@@ -1,5 +1,9 @@
 import { fetchDailyData, getStockFundamentals } from '../api/stocks.js';
 import { buyStock, sellStock, getAccount, getPortfolio, getTransactions } from '../api/trading.js';
+import { mapWithConcurrency } from '../utils/concurrency.js';
+
+// 銘柄分析（外部APIへのデータ取得）の最大同時実行数
+const ANALYSIS_CONCURRENCY = 15;
 
 // テクニカル指標計算
 function calculateSMA(prices, period) {
@@ -327,87 +331,95 @@ const DEFAULT_UNIVERSE = [
 
 // 自動売買実行
 async function executeAutoTrade(symbols = DEFAULT_UNIVERSE) {
-  const results = [];
   const account = getAccount();
   const portfolio = getPortfolio();
 
   // 直近100件の取引履歴を取得してクールダウン判定に使う
   const { transactions: recentTxns } = getTransactions(100, 0);
 
-  for (let i = 0; i < symbols.length; i++) {
-    const symbol = symbols[i];
-    // Yahoo Finance のレート制限対策: 銘柄間に間隔を空ける（50銘柄対応）
-    if (i > 0) await new Promise(r => setTimeout(r, 500));
-
+  // フェーズ1: データ取得・分析（ネットワークI/Oがボトルネックのため並列実行）
+  const analyzed = await mapWithConcurrency(symbols, ANALYSIS_CONCURRENCY, async (symbol) => {
     try {
       const [data, fundamentals] = await Promise.all([
         fetchDailyData(symbol),
         getStockFundamentals(symbol),
       ]);
-      const analysis = generateSignals(data, fundamentals);
-      const position = portfolio.find(p => p.symbol === symbol);
+      return { symbol, analysis: generateSignals(data, fundamentals) };
+    } catch (error) {
+      return { symbol, error: error.message };
+    }
+  });
 
-      let action = null;
-      let skipped = null;
+  // フェーズ2: 売買判断とDB書き込み
+  // 現金残高（account.current_cash）の整合性を保つため、銘柄順に逐次実行する
+  const results = [];
+  for (const item of analyzed) {
+    if (item.error) {
+      results.push(item);
+      continue;
+    }
 
-      // クールダウンチェック（信頼度に応じて動的に判定）
-      const cooldown = isInCooldown(symbol, recentTxns, analysis.confidence);
-      if (cooldown.inCooldown) {
-        skipped = cooldown.reason;
-      } else if (analysis.signal === 'BUY' && analysis.confidence >= AUTO_TRADE_CONFIDENCE_THRESHOLD) {
-        if (position) {
-          // 既に保有中はスキップ（ナンピン買い防止）
-          skipped = `既に${position.shares}株保有中のためスキップ`;
-        } else {
-          const valueScore = analysis.indicators.valueScore;
-          const buyRatio = calcBuyRatio(analysis.confidence, valueScore);
-          const currentPrice = analysis.indicators.currentPrice;
+    const { symbol, analysis } = item;
+    const position = portfolio.find(p => p.symbol === symbol);
 
-          // 投資額 = max(現金×比率, 最低投資額) ただし現金を超えない
-          const ratioInvestment = account.current_cash * buyRatio;
-          const maxInvestment = Math.min(
-            Math.max(ratioInvestment, MIN_INVESTMENT_YEN),
-            account.current_cash * 0.90  // 全資金の90%を上限にして最低限の現金を残す
-          );
-          const shares = Math.floor(maxInvestment / currentPrice);
-          const actualInvestment = shares * currentPrice;
-          const actualPercent = (actualInvestment / account.current_cash * 100).toFixed(0);
+    let action = null;
+    let skipped = null;
 
-          if (shares > 0 && account.current_cash >= currentPrice) {
-            try {
-              action = await buyStock(symbol, shares, 'AUTO_SMA_RSI_VALUE',
-                `${analysis.reason}（信頼度${analysis.confidence}% → ${shares}株×¥${Math.round(currentPrice).toLocaleString()} = ¥${Math.round(actualInvestment).toLocaleString()}、現金の${actualPercent}%）`);
-              account.current_cash = action.remainingCash;
-            } catch (e) {
-              action = { error: e.message };
-            }
-          } else {
-            skipped = '購入可能株数が0（資金不足）';
-          }
-        }
-      } else if (analysis.signal === 'SELL' && analysis.confidence >= AUTO_TRADE_CONFIDENCE_THRESHOLD) {
-        if (!position) {
-          skipped = '保有なしのためスキップ';
-        } else {
-          const sellRatio = calcSellRatio(analysis.confidence);
-          const sharesToSell = Math.max(1, Math.floor(position.shares * sellRatio));
-          const ratioPercent = (sellRatio * 100).toFixed(0);
+    // クールダウンチェック（信頼度に応じて動的に判定）
+    const cooldown = isInCooldown(symbol, recentTxns, analysis.confidence);
+    if (cooldown.inCooldown) {
+      skipped = cooldown.reason;
+    } else if (analysis.signal === 'BUY' && analysis.confidence >= AUTO_TRADE_CONFIDENCE_THRESHOLD) {
+      if (position) {
+        // 既に保有中はスキップ（ナンピン買い防止）
+        skipped = `既に${position.shares}株保有中のためスキップ`;
+      } else {
+        const valueScore = analysis.indicators.valueScore;
+        const buyRatio = calcBuyRatio(analysis.confidence, valueScore);
+        const currentPrice = analysis.indicators.currentPrice;
+
+        // 投資額 = max(現金×比率, 最低投資額) ただし現金を超えない
+        const ratioInvestment = account.current_cash * buyRatio;
+        const maxInvestment = Math.min(
+          Math.max(ratioInvestment, MIN_INVESTMENT_YEN),
+          account.current_cash * 0.90  // 全資金の90%を上限にして最低限の現金を残す
+        );
+        const shares = Math.floor(maxInvestment / currentPrice);
+        const actualInvestment = shares * currentPrice;
+        const actualPercent = (actualInvestment / account.current_cash * 100).toFixed(0);
+
+        if (shares > 0 && account.current_cash >= currentPrice) {
           try {
-            action = await sellStock(symbol, sharesToSell, 'AUTO_SMA_RSI_VALUE',
-              `${analysis.reason}（信頼度${analysis.confidence}% → ${sharesToSell}/${position.shares}株、保有の${ratioPercent}%を売却）`);
+            action = await buyStock(symbol, shares, 'AUTO_SMA_RSI_VALUE',
+              `${analysis.reason}（信頼度${analysis.confidence}% → ${shares}株×¥${Math.round(currentPrice).toLocaleString()} = ¥${Math.round(actualInvestment).toLocaleString()}、現金の${actualPercent}%）`);
             account.current_cash = action.remainingCash;
           } catch (e) {
             action = { error: e.message };
           }
+        } else {
+          skipped = '購入可能株数が0（資金不足）';
         }
-      } else if (analysis.signal === 'HOLD' || analysis.confidence < AUTO_TRADE_CONFIDENCE_THRESHOLD) {
-        skipped = `シグナル弱いためスキップ（${analysis.signal} / 信頼度${analysis.confidence}%）`;
       }
-
-      results.push({ symbol, analysis, action, skipped });
-    } catch (error) {
-      results.push({ symbol, error: error.message });
+    } else if (analysis.signal === 'SELL' && analysis.confidence >= AUTO_TRADE_CONFIDENCE_THRESHOLD) {
+      if (!position) {
+        skipped = '保有なしのためスキップ';
+      } else {
+        const sellRatio = calcSellRatio(analysis.confidence);
+        const sharesToSell = Math.max(1, Math.floor(position.shares * sellRatio));
+        const ratioPercent = (sellRatio * 100).toFixed(0);
+        try {
+          action = await sellStock(symbol, sharesToSell, 'AUTO_SMA_RSI_VALUE',
+            `${analysis.reason}（信頼度${analysis.confidence}% → ${sharesToSell}/${position.shares}株、保有の${ratioPercent}%を売却）`);
+          account.current_cash = action.remainingCash;
+        } catch (e) {
+          action = { error: e.message };
+        }
+      }
+    } else if (analysis.signal === 'HOLD' || analysis.confidence < AUTO_TRADE_CONFIDENCE_THRESHOLD) {
+      skipped = `シグナル弱いためスキップ（${analysis.signal} / 信頼度${analysis.confidence}%）`;
     }
+
+    results.push({ symbol, analysis, action, skipped });
   }
 
   return results;
@@ -429,13 +441,9 @@ async function analyzeStock(symbol) {
   };
 }
 
-// 複数銘柄をバリュースコアでスクリーニング
+// 複数銘柄をバリュースコアでスクリーニング（DB書き込みがないため完全並列実行）
 async function screenStocks(symbols = DEFAULT_UNIVERSE) {
-  const results = [];
-
-  for (let i = 0; i < symbols.length; i++) {
-    const symbol = symbols[i];
-    if (i > 0) await new Promise(r => setTimeout(r, 500));
+  const results = await mapWithConcurrency(symbols, ANALYSIS_CONCURRENCY, async (symbol) => {
     try {
       const [data, fundamentals] = await Promise.all([
         fetchDailyData(symbol),
@@ -444,7 +452,7 @@ async function screenStocks(symbols = DEFAULT_UNIVERSE) {
       const analysis = generateSignals(data, fundamentals);
       const valueScore = calculateValueScore(fundamentals);
 
-      results.push({
+      return {
         symbol,
         name: fundamentals.name || symbol,
         signal: analysis.signal,
@@ -453,11 +461,11 @@ async function screenStocks(symbols = DEFAULT_UNIVERSE) {
         valueScore,
         fundamentals,
         indicators: analysis.indicators,
-      });
+      };
     } catch (error) {
-      results.push({ symbol, error: error.message, valueScore: null });
+      return { symbol, error: error.message, valueScore: null };
     }
-  }
+  });
 
   // バリュースコア降順でソート
   results.sort((a, b) => (b.valueScore ?? -1) - (a.valueScore ?? -1));

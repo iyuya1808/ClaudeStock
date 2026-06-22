@@ -28,6 +28,7 @@ export default function Trading() {
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [autoTrading, setAutoTrading] = useState(false);
   const [autoResults, setAutoResults] = useState<AutoTradeResult[]>([]);
+  const [allTseUniverse, setAllTseUniverse] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -95,8 +96,8 @@ export default function Trading() {
     try {
       setAutoTrading(true);
       setAutoResults([]);
-      // 銘柄リストはサーバーのデフォルトユニバース（50銘柄）を使用
-      const results = await analysisApi.autoTrade([]);
+      // 全銘柄モード時は東証プライム・スタンダード・グロース全銘柄（約3,700社）が対象
+      const results = await analysisApi.autoTrade([], allTseUniverse ? 'ALL_TSE' : undefined);
       setAutoResults(results);
       const traded = results.filter(r => r.action && !('error' in r.action)).length;
       showMessage('success', `自動売買完了: ${results.length}銘柄を分析 / ${traded}件取引実行`);
@@ -239,11 +240,20 @@ export default function Trading() {
               }}>AUTO</span>
             </div>
             <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: 0 }}>
-              50銘柄をスクリーニング → SMA × RSI × バリュースコアで最適銘柄を自動選別・売買
+              {allTseUniverse ? '東証全銘柄（約3,700社）' : '50銘柄'}をスクリーニング → SMA × RSI × バリュースコアで最適銘柄を自動選別・売買
             </p>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--text-secondary)', cursor: autoTrading ? 'default' : 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={allTseUniverse}
+                disabled={autoTrading}
+                onChange={(e) => setAllTseUniverse(e.target.checked)}
+              />
+              全銘柄対象（東証全約3,700社・実行に数分〜数十分）
+            </label>
             {autoResults.length > 0 && (
               <div style={{ display: 'flex', gap: 16, fontSize: 12 }}>
                 <span style={{ color: 'var(--text-muted)' }}>

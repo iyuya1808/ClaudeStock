@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import path from 'path';
+import fs from 'fs';
 
 dotenv.config();
 
@@ -10,6 +11,8 @@ import db from './db.js';
 import { fetchDailyData, getLatestPrice, searchSymbol } from './api/stocks.js';
 import { getAccount, getPortfolio, getTransactions, buyStock, sellStock, getPortfolioSummary, getTradeStats, topUp } from './api/trading.js';
 import { executeAutoTrade, analyzeStock, screenStocks } from './engine/strategy.js';
+import { getFullTseUniverse } from './data/universe.js';
+import { startAutoTradeScheduler } from './scheduler.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -147,9 +150,15 @@ app.get('/api/analyze/:symbol', async (req, res) => {
 // 自動売買実行
 app.post('/api/auto-trade', async (req, res) => {
   try {
-    // 空配列 or 未指定の場合はデフォルトユニバース（50銘柄）を使用
-    const reqSymbols = req.body?.symbols;
-    const symbols = Array.isArray(reqSymbols) && reqSymbols.length > 0 ? reqSymbols : undefined;
+    let symbols;
+    if (req.body?.universe === 'ALL_TSE') {
+      // 東証プライム・スタンダード・グロース全銘柄（約3,700社）を対象にする
+      symbols = getFullTseUniverse();
+    } else {
+      // 空配列 or 未指定の場合はデフォルトユニバース（50銘柄）を使用
+      const reqSymbols = req.body?.symbols;
+      symbols = Array.isArray(reqSymbols) && reqSymbols.length > 0 ? reqSymbols : undefined;
+    }
     const results = await executeAutoTrade(symbols);
     res.json({ success: true, data: results });
   } catch (error) {
@@ -161,7 +170,10 @@ app.post('/api/auto-trade', async (req, res) => {
 app.get('/api/screen', async (req, res) => {
   try {
     let symbols;
-    if (req.query.symbols) {
+    if (req.query.universe === 'ALL_TSE') {
+      // 東証プライム・スタンダード・グロース全銘柄（約3,700社）を対象にする
+      symbols = getFullTseUniverse();
+    } else if (req.query.symbols) {
       symbols = req.query.symbols
         .split(',')
         .map(s => s.trim().toUpperCase())
@@ -200,6 +212,17 @@ app.post('/api/reset', (req, res) => {
   }
 });
 
+// ===== フロントエンド配信（本番ビルド済みの dist/ があれば配信） =====
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const distDir = path.join(__dirname, '..', 'dist');
+if (fs.existsSync(distDir)) {
+  app.use(express.static(distDir));
+  app.get(/^\/(?!api).*/, (req, res) => {
+    res.sendFile(path.join(distDir, 'index.html'));
+  });
+}
+
 app.listen(PORT, () => {
   console.log(`🚀 Claude Stock Server running on http://localhost:${PORT}`);
+  startAutoTradeScheduler();
 });

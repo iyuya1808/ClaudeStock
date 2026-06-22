@@ -3,11 +3,12 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DB_PATH = path.join(__dirname, '..', 'data', 'claude_stock.db');
+// DATA_DIR を指定するとDBの保存先を変更できる（Railway等の永続ボリュームをマウントする場合に使用）
+const dataDir = process.env.DATA_DIR || path.join(__dirname, '..', 'data');
+const DB_PATH = path.join(dataDir, 'claude_stock.db');
 
 // dataディレクトリがなければ作成
 import fs from 'fs';
-const dataDir = path.join(__dirname, '..', 'data');
 if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir, { recursive: true });
 }

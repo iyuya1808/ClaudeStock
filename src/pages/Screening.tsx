@@ -55,13 +55,14 @@ export default function Screening() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [buyStatus, setBuyStatus] = useState<Record<string, string>>({});
+  const [allTseUniverse, setAllTseUniverse] = useState(false);
 
   const runScreen = async () => {
     setLoading(true);
     setError(null);
     try {
       const symbols = symbolInput.split(',').map(s => s.trim()).filter(Boolean);
-      const data = await analysisApi.screen(symbols);
+      const data = await analysisApi.screen(symbols, allTseUniverse ? 'ALL_TSE' : undefined);
       setResults(data);
     } catch (e: any) {
       setError(e.message);
@@ -98,6 +99,7 @@ export default function Screening() {
             value={symbolInput}
             onChange={e => setSymbolInput(e.target.value)}
             rows={2}
+            disabled={allTseUniverse}
             style={{
               flex: 1,
               background: 'var(--bg-primary)',
@@ -108,6 +110,7 @@ export default function Screening() {
               fontSize: 12,
               padding: '8px 12px',
               resize: 'vertical',
+              opacity: allTseUniverse ? 0.5 : 1,
             }}
             placeholder="カンマ区切りで銘柄コードを入力 (例: 7203.T,AAPL)"
           />
@@ -119,6 +122,17 @@ export default function Screening() {
           >
             {loading ? '分析中...' : 'スクリーニング実行'}
           </button>
+        </div>
+        <div style={{ marginTop: 10 }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--text-secondary)', cursor: loading ? 'default' : 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={allTseUniverse}
+              disabled={loading}
+              onChange={(e) => setAllTseUniverse(e.target.checked)}
+            />
+            全銘柄対象（東証全約3,700社・実行に数分〜数十分、上の入力は無視されます）
+          </label>
         </div>
         <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 8 }}>
           ※ バリュースコア = PER(25pt) + PBR(25pt) + 配当利回り(20pt) + ROE(15pt) + 売上成長率(15pt)
