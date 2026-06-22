@@ -91,15 +91,28 @@ Yahoo Finance はAPIキー不要で利用しています。
 
 ### VS Code / Cursorの「実行とデバッグ」から起動する場合
 
-サイドバーの「実行とデバッグ」（または `F5`）から「ClaudeStock」を選択すると、`npm run dev`（フロントエンド + バックエンド同時起動、`.vscode/tasks.json`の`dev`タスク）が実行された後、`http://localhost:5173` がプレビューで開きます（`.vscode/launch.json`）。
+サイドバーの「実行とデバッグ」（または `F5`）から「ClaudeStock」を選択すると `npm run dev` が起動します。ターミナルに表示された URL（通常 `http://localhost:5173`）をブラウザで開いてください。
 
 ### ターミナルから起動する場合
 
 ```bash
-# VS Codeの統合ターミナルなどで実行（ビルド + 起動）
+npm run dev
+```
+
+起動後はターミナルに表示された URL を開きます（通常 `http://localhost:5173`。ポートが使用中の場合は `5174` など別ポートになります）。
+
+**ポート競合**（`Port 5173 is in use` や API 接続エラー）が出た場合は、古いプロセスが残っています。以下で停止してから再起動してください。
+
+```bash
+lsof -ti :5173,:5174,:3001 | xargs kill -9 2>/dev/null; npm run dev
+```
+
+### 本番モード（ビルド済み配信）で起動する場合
+
+```bash
 bash scripts/start.sh
 ```
 
-`scripts/start.sh` は `npm run build` → `node server/index.js` を実行し、ログは標準出力にそのまま流れます。停止するにはターミナルで `Ctrl+C`。
+`npm run build` → `node server/index.js` を実行します。停止は `Ctrl+C`。
 
 > macOSの `launchd` によるバックグラウンド常駐は、`~/Desktop` 以下のプロジェクトに対してはプライバシー保護（TCC）によりアクセス拒否されるため非対応です。常時起動が必要な場合はプロジェクトを `~/Desktop` 以外へ移動してから検討してください。
