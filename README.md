@@ -13,9 +13,13 @@
 ## セットアップ
 
 ```bash
+git clone https://github.com/iyuya1808/ClaudeStock.git
+cd ClaudeStock
 npm install
 cp .env.example .env
 ```
+
+別端末でデータを復元する場合は `git pull` するだけで `data/claude_stock.db`（取引履歴・保有株）が同期されます。株価キャッシュは起動後に Yahoo Finance から再取得されます。
 
 ## コマンド
 

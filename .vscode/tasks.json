@@ -1,0 +1,47 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "type": "npm",
+      "script": "dev",
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "typescript",
+        "pattern": {
+          "regexp": "^.*$",
+          "file": 1,
+          "location": 2,
+          "message": 3
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".*",
+          "endsPattern": "Local:.*http://localhost:"
+        }
+      },
+      "label": "npm: dev",
+      "detail": "concurrently \"vite\" \"node --watch server/index.js\""
+    },
+    {
+      "type": "npm",
+      "script": "dev:debug",
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "typescript",
+        "pattern": {
+          "regexp": "^.*$",
+          "file": 1,
+          "location": 2,
+          "message": 3
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".*",
+          "endsPattern": "Local:.*http://localhost:"
+        }
+      },
+      "label": "npm: dev:debug",
+      "detail": "concurrently \"vite\" \"node --watch --inspect server/index.js\""
+    }
+  ]
+}
