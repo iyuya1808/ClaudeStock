@@ -6,9 +6,15 @@ import Portfolio from './pages/Portfolio';
 import History from './pages/History';
 import Settings from './pages/Settings';
 import Screening from './pages/Screening';
+import { StockNavContext } from './context/StockNavContext';
 import './index.css';
 
 type Page = 'dashboard' | 'trading' | 'portfolio' | 'history' | 'settings' | 'screening';
+
+interface StockNavRequest {
+  symbol: string;
+  nonce: number;
+}
 
 const NAV_ITEMS: { id: Page; icon: string; label: string }[] = [
   { id: 'dashboard', icon: '▦', label: 'ダッシュボード' },
@@ -21,12 +27,20 @@ const NAV_ITEMS: { id: Page; icon: string; label: string }[] = [
 
 function App() {
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
+  const [navOpen, setNavOpen] = useState(false);
+  const [stockNavRequest, setStockNavRequest] = useState<StockNavRequest | null>(null);
   const { theme, toggleTheme } = useTheme();
+
+  const viewStock = (symbol: string) => {
+    setStockNavRequest(prev => ({ symbol, nonce: (prev?.nonce ?? 0) + 1 }));
+    setCurrentPage('trading');
+    setNavOpen(false);
+  };
 
   const renderPage = () => {
     switch (currentPage) {
       case 'dashboard': return <Dashboard />;
-      case 'trading': return <Trading />;
+      case 'trading': return <Trading stockNavRequest={stockNavRequest} />;
       case 'portfolio': return <Portfolio />;
       case 'screening': return <Screening />;
       case 'history': return <History />;
@@ -36,9 +50,20 @@ function App() {
   };
 
   return (
+    <StockNavContext.Provider value={{ viewStock }}>
     <div className="app-layout">
+      <button
+        className="mobile-nav-toggle"
+        onClick={() => setNavOpen(v => !v)}
+        aria-label="メニューを開く"
+      >
+        {navOpen ? '✕' : '☰'}
+      </button>
+
+      {navOpen && <div className="sidebar-backdrop" onClick={() => setNavOpen(false)} />}
+
       {/* Sidebar */}
-      <nav className="sidebar">
+      <nav className={`sidebar ${navOpen ? 'open' : ''}`}>
         <div className="sidebar-logo">
           <div className="sidebar-logo-icon">▲</div>
           <div>
@@ -52,7 +77,7 @@ function App() {
             <button
               key={item.id}
               className={`nav-link ${currentPage === item.id ? 'active' : ''}`}
-              onClick={() => setCurrentPage(item.id)}
+              onClick={() => { setCurrentPage(item.id); setNavOpen(false); }}
             >
               <span className="nav-icon">{item.icon}</span>
               {item.label}
@@ -110,6 +135,7 @@ function App() {
         {renderPage()}
       </main>
     </div>
+    </StockNavContext.Provider>
   );
 }
 

@@ -81,7 +81,7 @@ npm run lint
 | `DATA_DIR` | `data/` | SQLiteの保存先 |
 | `AUTO_TRADE_SCHEDULE_ENABLED` | `true` | 自動売買の定期実行を有効化するか |
 | `AUTO_TRADE_INTERVAL_MINUTES` | `60` | 定期実行の間隔（分） |
-| `AUTO_TRADE_SCHEDULE_UNIVERSE` | `ALL_TSE` | 定期実行の対象（`ALL_TSE` または `DEFAULT_50`） |
+| `AUTO_TRADE_SCHEDULE_UNIVERSE` | `ALL_TSE`（`.env.example`では`DEFAULT_50`を推奨設定） | 定期実行の対象（`ALL_TSE` または `DEFAULT_50`）。`ALL_TSE`は約3,700銘柄を対象にするためログが大量に出る |
 
 Yahoo Finance はAPIキー不要で利用しています。
 
@@ -91,7 +91,7 @@ Yahoo Finance はAPIキー不要で利用しています。
 
 ### VS Code / Cursorの「実行とデバッグ」から起動する場合
 
-サイドバーの「実行とデバッグ」（または `F5`）から「ClaudeStock」を選択すると `npm run dev` が起動します。ターミナルに表示された URL（通常 `http://localhost:5173`）をブラウザで開いてください。
+サイドバーの「実行とデバッグ」（または `F5`）から「ClaudeStock」を選択すると、統合ターミナルで `npm run dev` が起動します（`.vscode/launch.json`）。表示された URL（通常 `http://localhost:5173`）をブラウザで開いてください。
 
 ### ターミナルから起動する場合
 

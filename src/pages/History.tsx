@@ -1,15 +1,23 @@
 import { useState } from 'react';
-import { useTransactions } from '../hooks/useData';
+import { useTransactions, usePortfolioSummary } from '../hooks/useData';
+import StockLabel from '../components/StockLabel';
 
 export default function History() {
   const [limit] = useState(100);
   const { data, loading, refresh } = useTransactions(limit);
+  const { data: portfolio, loading: portfolioLoading, refresh: refreshPortfolio } = usePortfolioSummary();
 
   const transactions = data?.transactions || [];
   const total = data?.total || 0;
+  const positions = portfolio?.positions || [];
+  const heldSymbols = new Set(positions.map(p => p.symbol));
 
   const formatCurrency = (val: number) =>
     new Intl.NumberFormat('ja-JP', { style: 'currency', currency: 'JPY' }).format(Math.round(val));
+
+  const formatPercent = (val: number) => `${val >= 0 ? '+' : ''}${val.toFixed(2)}%`;
+
+  const handleRefresh = () => { refresh(); refreshPortfolio(); };
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -79,11 +87,75 @@ export default function History() {
           <p className="page-subtitle">Transaction Log / {total} records</p>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button className="btn btn-ghost btn-sm" onClick={refresh}>🔄 更新</button>
+          <button className="btn btn-ghost btn-sm" onClick={handleRefresh}>🔄 更新</button>
           <button className="btn btn-primary btn-sm" onClick={exportCSV} disabled={transactions.length === 0}>
             CSV出力
           </button>
         </div>
+      </div>
+
+      {/* 現在保有銘柄の価格変動 */}
+      <div className="card" style={{ marginBottom: 24 }}>
+        <div className="card-header">
+          <div>
+            <div className="card-title">現在保有銘柄の価格変動</div>
+            <div className="card-subtitle">購入時からの価格変動 / 未実現損益</div>
+          </div>
+        </div>
+        {portfolioLoading ? (
+          <div className="loading-spinner">
+            <div className="spinner" />
+          </div>
+        ) : positions.length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-state-icon">📭</div>
+            <div className="empty-state-text">保有銘柄がありません</div>
+          </div>
+        ) : (
+          <div className="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>銘柄</th>
+                  <th>株数</th>
+                  <th>取得単価</th>
+                  <th>現在値</th>
+                  <th>変動額</th>
+                  <th>変動率</th>
+                  <th>未実現損益</th>
+                </tr>
+              </thead>
+              <tbody>
+                {positions.map(pos => {
+                  const changeAmount = pos.currentPrice - pos.avg_cost;
+                  return (
+                    <tr key={pos.symbol}>
+                      <td><StockLabel symbol={pos.symbol} name={pos.name} /></td>
+                      <td className="mono">{pos.shares}</td>
+                      <td className="mono">{formatCurrency(pos.avg_cost)}</td>
+                      <td className="mono">{formatCurrency(pos.currentPrice)}</td>
+                      <td>
+                        <span className={`mono ${changeAmount >= 0 ? 'text-green' : 'text-red'}`}>
+                          {changeAmount >= 0 ? '▲' : '▼'} {formatCurrency(Math.abs(changeAmount))}
+                        </span>
+                      </td>
+                      <td>
+                        <span className={pos.pnlPercent >= 0 ? 'text-green' : 'text-red'} style={{ fontWeight: 600 }}>
+                          {formatPercent(pos.pnlPercent)}
+                        </span>
+                      </td>
+                      <td>
+                        <span className={`mono ${pos.pnl >= 0 ? 'text-green' : 'text-red'}`} style={{ fontWeight: 600 }}>
+                          {formatCurrency(pos.pnl)}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Summary Stats */}
@@ -144,7 +216,16 @@ export default function History() {
                         {tx.type === 'BUY' ? '買い' : '売り'}
                       </span>
                     </td>
-                    <td><strong className="text-accent">{tx.symbol}</strong></td>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <StockLabel symbol={tx.symbol} name={tx.name} />
+                        {heldSymbols.has(tx.symbol) && (
+                          <span className="badge" style={{ fontSize: 10, color: 'var(--blue)', background: 'rgba(60,120,220,0.1)' }}>
+                            保有中
+                          </span>
+                        )}
+                      </div>
+                    </td>
                     <td className="mono">{tx.shares}</td>
                     <td className="mono">{formatCurrency(tx.price)}</td>
                     <td className="mono">{formatCurrency(tx.total)}</td>

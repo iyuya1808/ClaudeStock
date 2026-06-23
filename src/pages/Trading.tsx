@@ -13,10 +13,15 @@ import {
 import { Line } from 'react-chartjs-2';
 import { tradingApi, analysisApi, stocksApi, type StockData, type Analysis, type AutoTradeResult, type SearchResult } from '../api';
 import { useTheme } from '../hooks/useTheme';
+import StockLabel from '../components/StockLabel';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
 
-export default function Trading() {
+interface TradingProps {
+  stockNavRequest?: { symbol: string; nonce: number } | null;
+}
+
+export default function Trading({ stockNavRequest }: TradingProps) {
   const { theme } = useTheme();
   const [symbol, setSymbol] = useState('7203.T');
   const [shares, setShares] = useState(1);
@@ -137,6 +142,15 @@ export default function Trading() {
     setStockData([]);
     setAnalysis(null);
   };
+
+  // 他ページから銘柄名/コードをクリックして遷移してきた場合、その銘柄を選択する
+  useEffect(() => {
+    if (!stockNavRequest) return;
+    const sym = stockNavRequest.symbol.toUpperCase();
+    setSymbol(sym);
+    setSearchQuery(sym);
+    setSearchOpen(false);
+  }, [stockNavRequest]);
 
   // 外クリックでドロップダウンを閉じる
   useEffect(() => {
@@ -308,7 +322,7 @@ export default function Trading() {
                   return (
                     <tr key={i} style={isTraded ? { background: 'rgba(0,200,100,0.04)' } : undefined}>
                       <td>
-                        <strong className="text-accent mono">{r.symbol}</strong>
+                        <StockLabel symbol={r.symbol} name={r.analysis?.name} />
                       </td>
                       <td>
                         {r.analysis ? (

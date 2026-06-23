@@ -771,16 +771,67 @@ select.form-input {
   gap: 20px;
 }
 
+/* ===== Mobile Nav Toggle ===== */
+.mobile-nav-toggle {
+  display: none;
+}
+
+.sidebar-backdrop {
+  display: none;
+}
+
 /* ===== Responsive ===== */
 @media (max-width: 1200px) {
   .grid-3 { grid-template-columns: 1fr 1fr; }
 }
 
 @media (max-width: 768px) {
-  .sidebar { transform: translateX(-100%); }
-  .main-content { margin-left: 0; padding: 20px 16px; }
+  .mobile-nav-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    top: 14px;
+    left: 16px;
+    width: 38px;
+    height: 38px;
+    border-radius: var(--radius-sm);
+    background: var(--bg-card);
+    border: 1px solid var(--border-primary);
+    color: var(--text-primary);
+    font-size: 16px;
+    cursor: pointer;
+    z-index: 200;
+  }
+
+  .sidebar {
+    transform: translateX(-100%);
+    width: 240px;
+    box-shadow: var(--shadow-lg);
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 99;
+  }
+
+  .main-content { margin-left: 0; padding: 64px 16px 24px; max-width: 100%; }
   .grid-2, .grid-3 { grid-template-columns: 1fr; }
   .stats-grid { grid-template-columns: 1fr 1fr; }
+  .page-title { font-size: 24px; }
+  .card { padding: 18px; }
+}
+
+@media (max-width: 480px) {
+  .stats-grid { grid-template-columns: 1fr; }
+  .card-header { flex-wrap: wrap; gap: 8px; }
 }
 
 /* ===== Scrollbar ===== */
@@ -916,3 +967,12 @@ select.form-input {
 .num-positive { color: var(--green-light); font-family: 'IBM Plex Mono', monospace; }
 .num-negative { color: var(--red-light); font-family: 'IBM Plex Mono', monospace; }
 .num-neutral { color: var(--text-primary); font-family: 'IBM Plex Mono', monospace; }
+
+/* ===== Stock label link (銘柄詳細への遷移リンク) ===== */
+.stock-label-link span:first-child {
+  transition: color 0.15s;
+}
+.stock-label-link:hover span:first-child {
+  color: var(--accent);
+  text-decoration: underline;
+}

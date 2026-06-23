@@ -103,6 +103,7 @@ export interface Account {
 export interface PortfolioPosition {
   id: number;
   symbol: string;
+  name?: string;
   shares: number;
   avg_cost: number;
   purchased_at: string;
@@ -131,6 +132,7 @@ export interface PortfolioSummary {
 export interface TradeResult {
   type: 'BUY' | 'SELL';
   symbol: string;
+  name?: string;
   shares: number;
   price: number;
   total: number;
@@ -143,6 +145,7 @@ export interface TradeResult {
 export interface Transaction {
   id: number;
   symbol: string;
+  name?: string;
   type: 'BUY' | 'SELL';
   shares: number;
   price: number;

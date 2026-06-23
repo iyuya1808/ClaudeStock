@@ -1,6 +1,7 @@
 import db from '../db.js';
 import { getLatestPrice } from './stocks.js';
 import { scheduleDbSync } from '../gitSync.js';
+import { getSymbolName } from '../data/universe.js';
 
 // アカウント情報取得
 function getAccount() {
@@ -9,14 +10,16 @@ function getAccount() {
 
 // ポートフォリオ取得
 function getPortfolio() {
-  return db.prepare('SELECT * FROM portfolio ORDER BY symbol').all();
+  const rows = db.prepare('SELECT * FROM portfolio ORDER BY symbol').all();
+  return rows.map(row => ({ ...row, name: getSymbolName(row.symbol) }));
 }
 
 // 取引履歴取得
 function getTransactions(limit = 50, offset = 0) {
-  const transactions = db.prepare(
+  const rows = db.prepare(
     'SELECT * FROM transactions ORDER BY executed_at DESC LIMIT ? OFFSET ?'
   ).all(limit, offset);
+  const transactions = rows.map(row => ({ ...row, name: getSymbolName(row.symbol) }));
   const total = db.prepare('SELECT COUNT(*) as count FROM transactions').get();
   return { transactions, total: total.count };
 }
@@ -59,6 +62,7 @@ async function buyStock(symbol, shares, strategy = 'MANUAL', reason = '') {
   return {
     type: 'BUY',
     symbol,
+    name: getSymbolName(symbol),
     shares,
     price,
     total,
@@ -109,6 +113,7 @@ async function sellStock(symbol, shares, strategy = 'MANUAL', reason = '') {
   return {
     type: 'SELL',
     symbol,
+    name: getSymbolName(symbol),
     shares,
     price,
     total,

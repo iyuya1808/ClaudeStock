@@ -1,6 +1,7 @@
 import { usePortfolioSummary, useTradeStats, useTransactions } from '../hooks/useData';
 import { tradingApi } from '../api';
 import { useState } from 'react';
+import StockLabel from '../components/StockLabel';
 
 export default function Dashboard() {
   const { data: portfolio, loading: portfolioLoading, refresh: refreshPortfolio } = usePortfolioSummary();
@@ -127,7 +128,7 @@ export default function Dashboard() {
                 <tbody>
                   {positions.map(pos => (
                     <tr key={pos.symbol}>
-                      <td><strong className="text-accent">{pos.symbol}</strong></td>
+                      <td><StockLabel symbol={pos.symbol} name={pos.name} /></td>
                       <td className="mono">{pos.shares}</td>
                       <td className="mono">{formatCurrency(pos.currentPrice)}</td>
                       <td>
@@ -175,7 +176,7 @@ export default function Dashboard() {
                           {tx.type === 'BUY' ? '買い' : '売り'}
                         </span>
                       </td>
-                      <td><strong>{tx.symbol}</strong></td>
+                      <td><StockLabel symbol={tx.symbol} name={tx.name} /></td>
                       <td className="mono">{tx.shares}</td>
                       <td className="mono">{formatCurrency(tx.total)}</td>
                     </tr>

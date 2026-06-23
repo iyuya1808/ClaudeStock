@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { analysisApi, tradingApi, type ScreenResult } from '../api';
+import StockLabel from '../components/StockLabel';
 
 // セクター別に主要銘柄を幅広くカバー（約50銘柄）
 const DEFAULT_SYMBOLS = [
@@ -193,10 +194,7 @@ export default function Screening() {
                   return (
                     <tr key={r.symbol} style={{ borderBottom: '1px solid var(--border-primary)' }}>
                       <td style={{ padding: '10px 12px' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-                          <span style={{ fontWeight: 700, fontSize: 14 }}>{r.name || '-'}</span>
-                          <span className="mono" style={{ fontSize: 10, color: 'var(--text-muted)' }}>{r.symbol}</span>
-                        </div>
+                        <StockLabel symbol={r.symbol} name={r.name} />
                       </td>
                       <td style={{ padding: '10px 12px', textAlign: 'center' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>

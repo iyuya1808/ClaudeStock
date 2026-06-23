@@ -1,5 +1,6 @@
 import { usePortfolioSummary } from '../hooks/useData';
 import { useTheme } from '../hooks/useTheme';
+import StockLabel from '../components/StockLabel';
 import {
   Chart as ChartJS,
   ArcElement,
@@ -35,7 +36,7 @@ export default function Portfolio() {
 
   // Doughnut chart data
   const doughnutData = positions.length > 0 ? {
-    labels: positions.map(p => p.symbol),
+    labels: positions.map(p => p.name ? `${p.name} (${p.symbol})` : p.symbol),
     datasets: [{
       data: positions.map(p => p.marketValue),
       backgroundColor: positions.map((_, i) => COLORS[i % COLORS.length]),
@@ -147,7 +148,7 @@ export default function Portfolio() {
                 <tbody>
                   {positions.map(pos => (
                     <tr key={pos.symbol}>
-                      <td><strong className="text-accent">{pos.symbol}</strong></td>
+                      <td><StockLabel symbol={pos.symbol} name={pos.name} /></td>
                       <td className="mono">{pos.shares}</td>
                       <td className="mono">{formatCurrency(pos.avg_cost)}</td>
                       <td className="mono">{formatCurrency(pos.currentPrice)}</td>
